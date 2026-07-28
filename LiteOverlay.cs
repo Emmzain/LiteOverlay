@@ -459,6 +459,10 @@ namespace LiteOverlay
 
         private Label lblFpsVal, lblPingVal, lblRamVal, lblCpuVal, lblGpuVal, lblTempVal, lblBatVal, lblBatSub, lblNetVal, lblDiskVal;
 
+        private NotifyIcon trayIcon;
+        private ContextMenuStrip trayMenu;
+        private bool allowExit = false;
+
         [DllImport("user32.dll")]
         public static extern bool ReleaseCapture();
 
@@ -504,6 +508,83 @@ namespace LiteOverlay
             hudWindow.Show();
 
             InitSensors();
+            InitSystemTray();
+        }
+
+        private void InitSystemTray()
+        {
+            trayMenu = new ContextMenuStrip
+            {
+                BackColor = Color.FromArgb(15, 20, 34),
+                ForeColor = Color.White,
+                RenderMode = ToolStripRenderMode.System
+            };
+
+            ToolStripMenuItem itemShow = new ToolStripMenuItem("⚡ Show / Restore LiteOverlay");
+            itemShow.Font = new Font("Segoe UI", 9f, FontStyle.Bold);
+            itemShow.Click += (s, e) => RestoreFromTray();
+
+            ToolStripMenuItem itemExit = new ToolStripMenuItem("❌ Exit / Quit Application");
+            itemExit.Click += (s, e) => ExitApplication();
+
+            trayMenu.Items.Add(itemShow);
+            trayMenu.Items.Add(new ToolStripSeparator());
+            trayMenu.Items.Add(itemExit);
+
+            trayIcon = new NotifyIcon
+            {
+                Text = "LiteOverlay - Running in background",
+                ContextMenuStrip = trayMenu,
+                Visible = true
+            };
+
+            if (this.Icon != null)
+            {
+                trayIcon.Icon = this.Icon;
+            }
+            else
+            {
+                trayIcon.Icon = SystemIcons.Application;
+            }
+
+            trayIcon.Click += (s, e) =>
+            {
+                MouseEventArgs me = e as MouseEventArgs;
+                if (me != null && me.Button == MouseButtons.Left)
+                {
+                    RestoreFromTray();
+                }
+            };
+            trayIcon.DoubleClick += (s, e) => RestoreFromTray();
+        }
+
+        private void MinimizeToTray()
+        {
+            this.Hide();
+            this.ShowInTaskbar = false;
+            if (trayIcon != null)
+            {
+                trayIcon.ShowBalloonTip(1500, "LiteOverlay", "Minimized to System Tray. HUD is active.", ToolTipIcon.Info);
+            }
+        }
+
+        private void RestoreFromTray()
+        {
+            this.ShowInTaskbar = true;
+            this.Show();
+            this.WindowState = FormWindowState.Normal;
+            this.Activate();
+        }
+
+        private void ExitApplication()
+        {
+            allowExit = true;
+            if (trayIcon != null)
+            {
+                trayIcon.Visible = false;
+                trayIcon.Dispose();
+            }
+            Application.Exit();
         }
 
         protected override void OnPaint(PaintEventArgs e)
@@ -515,14 +596,27 @@ namespace LiteOverlay
             }
         }
 
-        protected override void OnFormClosed(FormClosedEventArgs e)
+        protected override void OnFormClosing(FormClosingEventArgs e)
         {
+            if (!allowExit && e.CloseReason == CloseReason.UserClosing)
+            {
+                e.Cancel = true;
+                MinimizeToTray();
+                return;
+            }
+
             if (hudWindow != null && !hudWindow.IsDisposed)
             {
                 hudWindow.Close();
             }
 
-            base.OnFormClosed(e);
+            if (trayIcon != null)
+            {
+                trayIcon.Visible = false;
+                trayIcon.Dispose();
+            }
+
+            base.OnFormClosing(e);
         }
 
         private void BuildDashboardUI()
