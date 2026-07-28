@@ -44,7 +44,7 @@
       glowEffect: true,
       lowPower: true,
       locked: false,
-      overlayVisible: true
+      overlayVisible: false
     }
   };
 

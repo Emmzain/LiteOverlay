@@ -39,7 +39,7 @@ namespace LiteOverlay
         public static bool ShowNetwork = false;
         public static bool ShowDisk = false;
 
-        public static bool OverlayVisible = true;
+        public static bool OverlayVisible = false;
         public static bool ShowBorder = true;
         public static bool ShowLabels = true;
         public static bool GlowEffect = true;
@@ -814,7 +814,7 @@ namespace LiteOverlay
 
             chkMasterSwitch = new ModernToggleSwitch
             {
-                Checked = true,
+                Checked = false,
                 Location = new Point(180, 6),
                 Size = new Size(48, 24),
                 Cursor = Cursors.Hand
