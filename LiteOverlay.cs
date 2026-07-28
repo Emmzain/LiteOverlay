@@ -778,7 +778,7 @@ namespace LiteOverlay
             Label lblOp = new Label { Text = "Background Opacity: " + AppState.OpacityPct + "%", Location = new Point(18, 185), AutoSize = true, Font = new Font("Segoe UI", 9f), ForeColor = Color.FromArgb(136, 152, 168) };
             boxApp.Controls.Add(lblOp);
 
-            TrackBar tbOp = new TrackBar { Location = new Point(18, 208), Width = 430, Height = 28, AutoSize = false, Minimum = 0, Maximum = 100, Value = AppState.OpacityPct, TickStyle = TickStyle.None };
+            ModernRangeSlider tbOp = new ModernRangeSlider { Location = new Point(18, 208), Width = 430, Height = 24, Minimum = 0, Maximum = 100, Value = AppState.OpacityPct };
             tbOp.ValueChanged += (s, e) =>
             {
                 AppState.OpacityPct = tbOp.Value;
@@ -790,7 +790,7 @@ namespace LiteOverlay
             Label lblFont = new Label { Text = "Font Size: " + AppState.FontSize + "px", Location = new Point(18, 250), AutoSize = true, Font = new Font("Segoe UI", 9f), ForeColor = Color.FromArgb(136, 152, 168) };
             boxApp.Controls.Add(lblFont);
 
-            TrackBar tbFont = new TrackBar { Location = new Point(18, 272), Width = 430, Height = 28, AutoSize = false, Minimum = 10, Maximum = 28, Value = AppState.FontSize, TickStyle = TickStyle.None };
+            ModernRangeSlider tbFont = new ModernRangeSlider { Location = new Point(18, 272), Width = 430, Height = 24, Minimum = 10, Maximum = 28, Value = AppState.FontSize };
             tbFont.ValueChanged += (s, e) =>
             {
                 AppState.FontSize = tbFont.Value;
@@ -802,7 +802,7 @@ namespace LiteOverlay
             Label lblRad = new Label { Text = "Corner Rounding: " + AppState.BorderRadius + "px", Location = new Point(18, 314), AutoSize = true, Font = new Font("Segoe UI", 9f), ForeColor = Color.FromArgb(136, 152, 168) };
             boxApp.Controls.Add(lblRad);
 
-            TrackBar tbRad = new TrackBar { Location = new Point(18, 336), Width = 430, Height = 28, AutoSize = false, Minimum = 0, Maximum = 20, Value = AppState.BorderRadius, TickStyle = TickStyle.None };
+            ModernRangeSlider tbRad = new ModernRangeSlider { Location = new Point(18, 336), Width = 430, Height = 24, Minimum = 0, Maximum = 20, Value = AppState.BorderRadius };
             tbRad.ValueChanged += (s, e) =>
             {
                 AppState.BorderRadius = tbRad.Value;
@@ -1216,6 +1216,175 @@ namespace LiteOverlay
             {
                 g.FillEllipse(knobBrush, knobX, knobY, knobSize, knobSize);
             }
+        }
+    }
+
+    public class ModernRangeSlider : Control
+    {
+        private int minimum = 0;
+        private int maximum = 100;
+        private int value = 50;
+        private bool isDragging = false;
+        private bool isHovered = false;
+
+        public event EventHandler ValueChanged;
+
+        public int Minimum
+        {
+            get { return minimum; }
+            set { minimum = value; Invalidate(); }
+        }
+
+        public int Maximum
+        {
+            get { return maximum; }
+            set { maximum = value; Invalidate(); }
+        }
+
+        public int Value
+        {
+            get { return value; }
+            set
+            {
+                int clamped = Math.Max(minimum, Math.Min(maximum, value));
+                if (this.value != clamped)
+                {
+                    this.value = clamped;
+                    Invalidate();
+                    if (ValueChanged != null) ValueChanged(this, EventArgs.Empty);
+                }
+            }
+        }
+
+        public ModernRangeSlider()
+        {
+            SetStyle(ControlStyles.UserPaint | ControlStyles.AllPaintingInWmPaint | ControlStyles.OptimizedDoubleBuffer, true);
+            Height = 24;
+            Cursor = Cursors.Hand;
+        }
+
+        protected override void OnMouseEnter(EventArgs e)
+        {
+            isHovered = true;
+            Invalidate();
+            base.OnMouseEnter(e);
+        }
+
+        protected override void OnMouseLeave(EventArgs e)
+        {
+            isHovered = false;
+            Invalidate();
+            base.OnMouseLeave(e);
+        }
+
+        protected override void OnMouseDown(MouseEventArgs e)
+        {
+            if (e.Button == MouseButtons.Left)
+            {
+                isDragging = true;
+                UpdateValueFromMouse(e.X);
+            }
+            base.OnMouseDown(e);
+        }
+
+        protected override void OnMouseMove(MouseEventArgs e)
+        {
+            if (isDragging)
+            {
+                UpdateValueFromMouse(e.X);
+            }
+            base.OnMouseMove(e);
+        }
+
+        protected override void OnMouseUp(MouseEventArgs e)
+        {
+            isDragging = false;
+            Invalidate();
+            base.OnMouseUp(e);
+        }
+
+        private void UpdateValueFromMouse(int mouseX)
+        {
+            int thumbRadius = 8;
+            int trackWidth = Width - (thumbRadius * 2);
+            if (trackWidth <= 0) return;
+
+            double pct = (double)(mouseX - thumbRadius) / trackWidth;
+            pct = Math.Max(0.0, Math.Min(1.0, pct));
+            Value = minimum + (int)Math.Round(pct * (maximum - minimum));
+        }
+
+        protected override void OnPaint(PaintEventArgs e)
+        {
+            Graphics g = e.Graphics;
+            g.SmoothingMode = SmoothingMode.AntiAlias;
+
+            int trackHeight = 6;
+            int trackY = (Height - trackHeight) / 2;
+            int thumbRadius = 8;
+            int thumbDiameter = thumbRadius * 2;
+            int trackWidth = Width - thumbDiameter;
+
+            if (trackWidth <= 0) return;
+
+            double pct = (maximum > minimum) ? (double)(value - minimum) / (maximum - minimum) : 0;
+            int thumbX = thumbRadius + (int)Math.Round(pct * trackWidth);
+
+            // 1. Draw Dark Background Track
+            using (GraphicsPath trackPath = GetRoundedRectPath(new Rectangle(thumbRadius, trackY, trackWidth, trackHeight), trackHeight / 2))
+            using (SolidBrush bgBrush = new SolidBrush(Color.FromArgb(30, 41, 59)))
+            {
+                g.FillPath(bgBrush, trackPath);
+            }
+
+            // 2. Draw Active Filled Track (Neon Green Accent)
+            int activeWidth = thumbX - thumbRadius;
+            if (activeWidth > 0)
+            {
+                using (GraphicsPath activePath = GetRoundedRectPath(new Rectangle(thumbRadius, trackY, activeWidth, trackHeight), trackHeight / 2))
+                using (SolidBrush fillBrush = new SolidBrush(AppState.AccentColor))
+                {
+                    g.FillPath(fillBrush, activePath);
+                }
+            }
+
+            // 3. Draw Thumb Knob
+            Rectangle thumbRect = new Rectangle(thumbX - thumbRadius, (Height - thumbDiameter) / 2, thumbDiameter, thumbDiameter);
+
+            if (isHovered || isDragging)
+            {
+                using (SolidBrush glowBrush = new SolidBrush(Color.FromArgb(50, AppState.AccentColor)))
+                {
+                    g.FillEllipse(glowBrush, thumbRect.X - 3, thumbRect.Y - 3, thumbDiameter + 6, thumbDiameter + 6);
+                }
+            }
+
+            using (SolidBrush thumbBrush = new SolidBrush(AppState.AccentColor))
+            {
+                g.FillEllipse(thumbBrush, thumbRect);
+            }
+
+            using (SolidBrush centerBrush = new SolidBrush(Color.FromArgb(6, 8, 14)))
+            {
+                g.FillEllipse(centerBrush, thumbRect.X + 4, thumbRect.Y + 4, thumbDiameter - 8, thumbDiameter - 8);
+            }
+        }
+
+        private GraphicsPath GetRoundedRectPath(Rectangle rect, int radius)
+        {
+            GraphicsPath path = new GraphicsPath();
+            if (radius <= 0)
+            {
+                path.AddRectangle(rect);
+                return path;
+            }
+            int d = radius * 2;
+            path.AddArc(rect.X, rect.Y, d, d, 180, 90);
+            path.AddArc(rect.Right - d, rect.Y, d, d, 270, 90);
+            path.AddArc(rect.Right - d, rect.Bottom - d, d, d, 0, 90);
+            path.AddArc(rect.X, rect.Bottom - d, d, d, 90, 90);
+            path.CloseFigure();
+            return path;
         }
     }
 }
