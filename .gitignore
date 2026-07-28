@@ -1,0 +1,13 @@
+# Dependency directories
+node_modules/
+package-lock.json
+
+# Tauri Build target
+src-tauri/target/
+src-tauri/Cargo.lock
+
+# Logs & temp files
+*.log
+.DS_Store
+dist/
+build/

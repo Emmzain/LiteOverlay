@@ -1,0 +1,56 @@
+{
+  "build": {
+    "distDir": "../",
+    "devPath": "http://localhost:8080"
+  },
+  "package": {
+    "productName": "LiteOverlay",
+    "version": "1.0.0"
+  },
+  "tauri": {
+    "allowlist": {
+      "all": false
+    },
+    "bundle": {
+      "active": true,
+      "category": "Utility",
+      "copyright": "",
+      "deb": {
+        "depends": []
+      },
+      "externalBin": [],
+      "icon": [
+        "icons/icon.png"
+      ],
+      "identifier": "com.liteoverlay.app",
+      "longDescription": "",
+      "macOS": {
+        "frameworks": [],
+        "minimumSystemVersion": ""
+      },
+      "resources": [],
+      "shortDescription": "Ultra Low-End FPS & System Monitor Overlay",
+      "targets": "all",
+      "windows": {
+        "certificateThumbprint": null,
+        "digestAlgorithm": "sha256",
+        "timestampUrl": ""
+      }
+    },
+    "security": {
+      "csp": null
+    },
+    "windows": [
+      {
+        "fullscreen": false,
+        "height": 600,
+        "resizable": true,
+        "title": "LiteOverlay",
+        "width": 900,
+        "transparent": true,
+        "alwaysOnTop": true,
+        "decorations": true
+      }
+    ]
+  }
+}

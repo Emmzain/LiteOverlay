@@ -1,0 +1,274 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>LiteOverlay - Tabbed Dashboard & Air HUD Monitor</title>
+  <link rel="manifest" href="manifest.json">
+  <meta name="theme-color" content="#0c0e12">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body class="theme-dark">
+  <div id="app" class="app-container">
+    <!-- Header Bar -->
+    <header class="app-header">
+      <div class="logo-area">
+        <span class="badge-low-end">ULTRA LOW RAM</span>
+        <h1>
+          <svg class="icon-svg brand-icon" viewBox="0 0 24 24"><path fill="currentColor" d="M7 2v11h3v9l7-12h-4l4-8z"/></svg>
+          LiteOverlay
+        </h1>
+      </div>
+
+      <!-- Master Overlay Switch & Download Desktop App Button -->
+      <div class="header-actions">
+        <div class="master-switch-container">
+          <span class="master-switch-label">OVERLAY DISPLAY</span>
+          <label class="switch-toggle">
+            <input type="checkbox" id="master-overlay-switch" checked>
+            <span class="switch-slider"></span>
+          </label>
+        </div>
+
+        <button id="btn-install-pwa" class="btn install-btn">
+          <svg class="icon-svg" viewBox="0 0 24 24"><path fill="currentColor" d="M5 20h14v-2H5v2zM19 9h-4V3H9v6H5l7 7 7-7z"/></svg>
+          Download Desktop App (.exe)
+        </button>
+      </div>
+    </header>
+
+    <!-- Top Category Navigation Bar -->
+    <nav class="category-nav-bar">
+      <button class="nav-tab active" data-tab="tab-overlay">
+        <svg class="icon-svg" viewBox="0 0 24 24"><path fill="currentColor" d="M19 4H5c-1.11 0-2 .9-2 2v12c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 14H5V8h14v10z"/></svg>
+        OVERLAY SETTINGS
+      </button>
+      <button class="nav-tab" data-tab="tab-system">
+        <svg class="icon-svg" viewBox="0 0 24 24"><path fill="currentColor" d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-5 14H7v-2h7v2zm3-4H7v-2h10v2zm0-4H7V7h10v2z"/></svg>
+        SYSTEM MONITOR
+      </button>
+      <button class="nav-tab" data-tab="tab-performance">
+        <svg class="icon-svg" viewBox="0 0 24 24"><path fill="currentColor" d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58c.18-.14.23-.41.12-.61l-1.92-3.32c-.12-.22-.37-.29-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94l-.36-2.54c-.04-.24-.24-.41-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.09.63-.09.94s.02.64.07.94l-2.03 1.58c-.18.14-.23.41-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6-3.6z"/></svg>
+        PERFORMANCE & APP
+      </button>
+    </nav>
+
+    <!-- Tab View Container -->
+    <main class="tab-content-container">
+      
+      <!-- TAB 1: OVERLAY SETTINGS -->
+      <div id="tab-overlay" class="tab-pane active">
+        <div class="tab-grid-2col">
+          <!-- Active Stats Selector Card -->
+          <section class="card">
+            <h2>
+              <svg class="icon-svg" viewBox="0 0 24 24"><path fill="currentColor" d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-5 14H7v-2h7v2zm3-4H7v-2h10v2zm0-4H7V7h10v2z"/></svg>
+              Active Overlay Stats
+            </h2>
+            <p class="subtitle">Select which metrics appear inside your floating gaming HUD.</p>
+            
+            <div class="toggle-list">
+              <label class="toggle-item">
+                <input type="checkbox" id="toggle-fps" checked>
+                <span class="toggle-label">
+                  <svg class="icon-svg" viewBox="0 0 24 24"><path fill="currentColor" d="M21 6H3c-1.1 0-2 .9-2 2v8c0 1.1.9 2 2 2h18c1.1 0 2-.9 2-2V8c0-1.1-.9-2-2-2zm-10 7H9v2H7v-2H5v-2h2V9h2v2h2v2zm4.5 1c-.83 0-1.5-.67-1.5-1.5s.67-1.5 1.5-1.5 1.5.67 1.5 1.5-.67 1.5-1.5-1.5zm3-3c-.83 0-1.5-.67-1.5-1.5S17.67 9 18.5 9s1.5.67 1.5 1.5-.67 1.5-1.5 1.5z"/></svg>
+                  Live FPS
+                </span>
+              </label>
+              <label class="toggle-item">
+                <input type="checkbox" id="toggle-ping" checked>
+                <span class="toggle-label">
+                  <svg class="icon-svg" viewBox="0 0 24 24"><path fill="currentColor" d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 17.93c-3.95-.49-7-3.85-7-7.93 0-.62.08-1.21.21-1.79L9 15v1c0 1.1.9 2 2 2v1.93zm6.9-2.54c-.26-.81-1-1.39-1.9-1.39h-1v-3c0-.55-.45-1-1-1H8v-2h2c.55 0 1-.45 1-1V7h2c1.1 0 2-.9 2-2v-.41c2.93 1.19 5 4.06 5 7.41 0 2.08-.8 3.97-2.1 5.39z"/></svg>
+                  Ping (Latency)
+                </span>
+              </label>
+              <label class="toggle-item">
+                <input type="checkbox" id="toggle-ram" checked>
+                <span class="toggle-label">
+                  <svg class="icon-svg" viewBox="0 0 24 24"><path fill="currentColor" d="M6 2h12v2H6V2zm0 18h12v2H6v-2zm12-4H6V8h12v8zM4 9h2v6H4V9zm14 0h2v6h-2V9z"/></svg>
+                  RAM Usage
+                </span>
+              </label>
+              <label class="toggle-item">
+                <input type="checkbox" id="toggle-cpu" checked>
+                <span class="toggle-label">
+                  <svg class="icon-svg" viewBox="0 0 24 24"><path fill="currentColor" d="M15 9H9v6h6V9zm-2 4h-2v-2h2v2zm8-2V9h-2V7c0-1.1-.9-2-2-2h-2V3h-2v2h-2V3H9v2H7c-1.1 0-2 .9-2 2v2H3v2h2v2H3v2h2v2c0 1.1.9 2 2 2h2v2h2v-2h2v2h2v-2h2c1.1 0 2-.9 2-2v-2h2v-2h-2v-2h2zm-4 6H7V7h10v10z"/></svg>
+                  CPU Usage (%)
+                </span>
+              </label>
+              <label class="toggle-item">
+                <input type="checkbox" id="toggle-gpu" checked>
+                <span class="toggle-label">
+                  <svg class="icon-svg" viewBox="0 0 24 24"><path fill="currentColor" d="M20 4H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zM7 15H5v-2h2v2zm0-4H5V9h2v2zm4 4H9v-2h2v2zm0-4H9V9h2v2zm4 4h-2v-2h2v2zm0-4h-2V9h2v2zm4 4h-2v-2h2v2zm0-4h-2V9h2v2z"/></svg>
+                  GPU Usage (%)
+                </span>
+              </label>
+              <label class="toggle-item">
+                <input type="checkbox" id="toggle-temp">
+                <span class="toggle-label">
+                  <svg class="icon-svg" viewBox="0 0 24 24"><path fill="currentColor" d="M15 13V5c0-1.66-1.34-3-3-3S9 3.34 9 5v8c-1.21.91-2 2.37-2 4 0 2.76 2.24 5 5 5s5-2.24 5-5c0-1.63-.79-3.09-2-4zm-3-8c.55 0 1 .45 1 1v3h-2V6c0-.55.45-1 1-1z"/></svg>
+                  Temp (°C)
+                </span>
+              </label>
+              <label class="toggle-item">
+                <input type="checkbox" id="toggle-battery" checked>
+                <span class="toggle-label">
+                  <svg class="icon-svg" viewBox="0 0 24 24"><path fill="currentColor" d="M15.67 4H14V2h-4v2H8.33C7.6 4 7 4.6 7 5.33v15.33C7 21.4 7.6 22 8.33 22h7.33c.74 0 1.34-.6 1.34-1.33V5.33C17 4.6 16.4 4 15.67 4zM13 18h-2v-2h2v2zm0-4h-2V9h2v5z"/></svg>
+                  Battery %
+                </span>
+              </label>
+              <label class="toggle-item">
+                <input type="checkbox" id="toggle-network">
+                <span class="toggle-label">
+                  <svg class="icon-svg" viewBox="0 0 24 24"><path fill="currentColor" d="M12 3C6.95 3 2.69 5.86.6 10.07l2.12 2.12C4.16 8.7 7.79 6.25 12 6.25s7.84 2.45 9.28 5.94l2.12-2.12C21.31 5.86 17.05 3 12 3zm0 6c-3.15 0-5.88 1.66-7.34 4.14l2.12 2.12C7.81 13.9 9.77 12.5 12 12.5s4.19 1.4 5.22 2.76l2.12-2.12C17.88 10.66 15.15 9 12 9zm0 6c-1.38 0-2.5 1.12-2.5 2.5S10.62 20 12 20s2.5-1.12 2.5-2.5S13.38 15 12 15z"/></svg>
+                  Network Speed
+                </span>
+              </label>
+              <label class="toggle-item">
+                <input type="checkbox" id="toggle-disk">
+                <span class="toggle-label">
+                  <svg class="icon-svg" viewBox="0 0 24 24"><path fill="currentColor" d="M20 6H4c-1.1 0-2 .9-2 2v8c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V8c0-1.1-.9-2-2-2zm-10 7H6v-2h4v2zm8 0h-4v-2h4v2z"/></svg>
+                  Disk Storage
+                </span>
+              </label>
+            </div>
+          </section>
+
+          <!-- Overlay Appearance Card -->
+          <section class="card">
+            <h2>
+              <svg class="icon-svg" viewBox="0 0 24 24"><path fill="currentColor" d="M12 3c-4.97 0-9 4.03-9 9 0 2.12.74 4.07 1.97 5.61L4.35 19.4c-.39.39-.39 1.02 0 1.41.39.39 1.02.39 1.41 0l1.9-1.9C9.2 19.53 10.55 20 12 20c4.97 0 9-4.03 9-9s-4.03-9-9-9zm0 15c-3.31 0-6-2.69-6-6s2.69-6 6-6 6 2.69 6 6-2.69 6-6 6z"/></svg>
+              Overlay Appearance & Theme
+            </h2>
+
+            <div class="setting-group">
+              <label>Overlay Accent Theme:</label>
+              <div class="color-palette">
+                <button class="color-btn active" data-color="#00e676" style="background: #00e676;" title="Neon Green"></button>
+                <button class="color-btn" data-color="#00b0ff" style="background: #00b0ff;" title="Cyber Blue"></button>
+                <button class="color-btn" data-color="#ff9100" style="background: #ff9100;" title="Vibrant Orange"></button>
+                <button class="color-btn" data-color="#ff5252" style="background: #ff5252;" title="Crimson Red"></button>
+                <button class="color-btn" data-color="#ffffff" style="background: #ffffff;" title="Pure White"></button>
+              </div>
+            </div>
+
+            <div class="setting-group">
+              <label for="overlay-layout">HUD Layout Style:</label>
+              <select id="overlay-layout" class="select-input">
+                <option value="vertical" selected>Vertical Stack</option>
+                <option value="horizontal">Horizontal Compact Bar</option>
+                <option value="grid">2-Column Grid</option>
+              </select>
+            </div>
+
+            <div class="setting-group range-group">
+              <label for="overlay-opacity">Background Opacity: <span id="opacity-val">85%</span></label>
+              <input type="range" id="overlay-opacity" min="0" max="100" value="85">
+            </div>
+
+            <div class="setting-group range-group">
+              <label for="overlay-size">Font Size: <span id="size-val">14px</span></label>
+              <input type="range" id="overlay-size" min="10" max="28" value="14">
+            </div>
+
+            <div class="setting-group range-group">
+              <label for="overlay-radius">Corner Rounding: <span id="radius-val">6px</span></label>
+              <input type="range" id="overlay-radius" min="0" max="20" value="6">
+            </div>
+
+            <div class="setting-group checkboxes-inline">
+              <label class="checkbox-label">
+                <input type="checkbox" id="toggle-border" checked>
+                <span>Overlay Border Line</span>
+              </label>
+              <label class="checkbox-label">
+                <input type="checkbox" id="show-labels" checked>
+                <span>Show Stat Titles (e.g. FPS 144)</span>
+              </label>
+              <label class="checkbox-label">
+                <input type="checkbox" id="toggle-glow" checked>
+                <span>Border Accent Glow</span>
+              </label>
+              <label class="checkbox-label">
+                <input type="checkbox" id="lock-overlay">
+                <span>Lock Overlay Drag Position</span>
+              </label>
+            </div>
+          </section>
+        </div>
+      </div>
+
+      <!-- TAB 2: SYSTEM MONITOR -->
+      <div id="tab-system" class="tab-pane">
+        <section class="card">
+          <div class="card-header">
+            <h2>
+              <svg class="icon-svg" viewBox="0 0 24 24"><path fill="currentColor" d="M21 3H3c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h18c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm0 16H3V5h18v14z"/></svg>
+              Full System Telemetry Monitor
+            </h2>
+            <span class="pulse-indicator">● LIVE SENSORS</span>
+          </div>
+
+          <div id="dashboard-stats-grid" class="dashboard-stats-grid">
+            <!-- Dynamic Telemetry Cards -->
+          </div>
+        </section>
+      </div>
+
+      <!-- TAB 3: PERFORMANCE & APP -->
+      <div id="tab-performance" class="tab-pane">
+        <div class="tab-grid-2col">
+          <!-- Laptop Optimization Card -->
+          <section class="card">
+            <h2>
+              <svg class="icon-svg" viewBox="0 0 24 24"><path fill="currentColor" d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58c.18-.14.23-.41.12-.61l-1.92-3.32c-.12-.22-.37-.29-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94l-.36-2.54c-.04-.24-.24-.41-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.09.63-.09.94s.02.64.07.94l-2.03 1.58c-.18.14-.23.41-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6-3.6z"/></svg>
+              Low-End Laptop Performance Mode
+            </h2>
+
+            <div class="setting-group">
+              <label for="update-interval">Data Refresh Interval:</label>
+              <select id="update-interval" class="select-input">
+                <option value="250">250 ms (Ultra Fast)</option>
+                <option value="500" selected>500 ms (Recommended)</option>
+                <option value="1000">1000 ms (Low CPU)</option>
+                <option value="2000">2000 ms (Extreme Low CPU)</option>
+              </select>
+            </div>
+
+            <div class="setting-group checkboxes-inline">
+              <label class="checkbox-label">
+                <input type="checkbox" id="low-power-mode" checked>
+                <span>Low Power Mode (Disable Animations & Blur)</span>
+              </label>
+            </div>
+          </section>
+
+          <!-- Desktop Installation & Native Bridge Info Card -->
+          <section class="card">
+            <h2>
+              <svg class="icon-svg" viewBox="0 0 24 24"><path fill="currentColor" d="M4 6h16v12H4z"/></svg>
+              Desktop Executable (.exe) Setup
+            </h2>
+            <p class="subtitle">Standalone PWA & Tauri Native Desktop Executable Package.</p>
+            <div style="font-size: 0.88rem; color: var(--text-muted); line-height: 1.6;">
+              <p style="margin-bottom: 0.8rem;">⚡ <strong>PWA App Download</strong>: Click "Download Desktop App (.exe)" to install as a desktop PWA.</p>
+              <p>🎮 <strong>Native Desktop .exe Build</strong>: Execute <code>npm run tauri:build</code> to compile standalone Windows <code>LiteOverlay.exe</code> binary with hardware sensors.</p>
+            </div>
+          </section>
+        </div>
+      </div>
+
+    </main>
+  </div>
+
+  <!-- FLOATING BORDERLESS "AIR HUD" OVERLAY WINDOW -->
+  <div id="game-overlay" class="game-overlay vertical-layout">
+    <div id="overlay-content" class="overlay-content">
+      <!-- Selected HUD items rendered here -->
+    </div>
+  </div>
+
+  <script src="tauri_bridge.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>

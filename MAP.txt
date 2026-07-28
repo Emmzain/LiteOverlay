@@ -1,0 +1,148 @@
+Agar target **low-end laptop gamers** hain, to philosophy ye honi chahiye:
+
+> **Performance First, Design Second.**
+
+Is project ko Electron jesa heavy framework par mat banao. Web App/PWA ya lightweight desktop wrapper use karo.
+
+### Tech Stack
+
+* **Frontend:** Next.js + React
+* **Styling:** Tailwind CSS
+* **Charts:** Canvas API (SVG se zyada lightweight)
+* **Animations:** CSS transitions (GSAP sirf zarurat ho to)
+* **PWA:** Offline support + Installable
+* **Backend (optional):** Supabase/Firebase
+* **Desktop (agar desktop app chahiye):** Tauri (Electron nahi)
+
+---
+
+## Features
+
+### Dashboard
+
+* 🎮 Live FPS
+* 🌡️ CPU Temperature (agar OS allow kare)
+* 💾 RAM Usage
+* 🖥️ CPU Usage
+* 🎮 GPU Usage
+* 🌡️ GPU Temperature
+* ⚡ Battery Health
+* 🔋 Battery %
+* 🌐 Ping
+* 📊 Network Speed
+* 💽 Disk Usage
+
+---
+
+### Gaming Overlay
+
+Game chalate waqt chhota overlay.
+
+```
+FPS      144
+CPU      32%
+GPU      67%
+RAM      6.4 GB
+TEMP     69°C
+PING     24ms
+```
+
+Overlay draggable ho aur transparent background ho.
+
+---
+
+### Performance Mode
+
+Ek click se:
+
+* Background animations OFF
+* Blur OFF
+* Shadows OFF
+* Charts simplified
+* 30 FPS UI rendering
+* Low RAM mode
+
+---
+
+### Optimization
+
+* Code Splitting
+* Lazy Loading
+* Dynamic Imports
+* Virtual Lists
+* Image Optimization
+* WebP/AVIF
+* Tree Shaking
+* Memoization
+* RequestAnimationFrame updates
+* Data update interval configurable (e.g. 500ms ya 1000ms)
+
+Target:
+
+* Idle RAM: **50–100 MB**
+* CPU Idle: **<2%**
+* Startup: **<2 seconds**
+
+---
+
+## UI
+
+Minimal dark theme.
+
+```
+┌──────────────────────────┐
+│ FPS      144             │
+│ CPU      22%             │
+│ GPU      64%             │
+│ RAM      5.8 GB          │
+│ TEMP     68°C            │
+│ PING     21ms            │
+└──────────────────────────┘
+```
+
+Koi heavy glassmorphism ya blur effects nahi.
+
+---
+
+## Important Limitation
+
+Agar ye **sirf browser-based web app** hogi, to browser security ki wajah se **CPU/GPU temperature, FPS of other games, GPU usage** jaise hardware metrics directly read nahi kiye ja sakte.
+
+In features ke liye desktop companion ya desktop app zaroori hogi. Is liye **Tauri** best choice hai:
+
+* Electron se bohot lightweight
+* Kam RAM use karta hai
+* Fast startup
+* Low-end laptops ke liye suitable
+* Native system APIs access kar sakta hai
+
+### Recommended Architecture
+
+```
+Frontend
+├── Next.js (UI)
+├── Tailwind CSS
+├── React
+└── PWA Support
+
+Desktop Layer
+└── Tauri (Rust)
+
+System Monitoring
+├── FPS
+├── CPU
+├── GPU
+├── RAM
+├── Temperature
+├── Battery
+└── Network
+
+Settings
+├── Overlay
+├── Performance Mode
+├── Themes
+└── Startup Options
+```
+
+Is tarah ka app MSI Afterburner ya Xbox Game Bar ki tarah information de sakta hai, lekin modern web technologies aur bahut kam resource usage ke saath.
+Lek
