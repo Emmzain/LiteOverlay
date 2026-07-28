@@ -1630,6 +1630,85 @@ namespace LiteOverlay
             metricsTimer.Start();
         }
 
+        [StructLayout(LayoutKind.Sequential)]
+        private struct DWM_UNSIGNED_RATIO
+        {
+            public uint uiNumerator;
+            public uint uiDenominator;
+        }
+
+        [StructLayout(LayoutKind.Sequential)]
+        private struct DWM_TIMING_INFO
+        {
+            public uint cbSize;
+            public DWM_UNSIGNED_RATIO rateRefresh;
+            public ulong qpcRefreshPeriod;
+            public DWM_UNSIGNED_RATIO rateCompose;
+            public ulong qpcVBlank;
+            public ulong cRefresh;
+            public uint cDXRefresh;
+            public ulong qpcCompose;
+            public ulong cFrame;
+            public uint cDXPresent;
+            public ulong cRefreshFrame;
+            public ulong cFrameSubmitted;
+            public uint cDXPresentSubmitted;
+            public ulong cFrameRendered;
+            public ulong cFrameDisplayed;
+            public ulong cPixelFormat;
+            public ulong cRefreshFramePresented;
+            public ulong cRefreshFrameDisplayed;
+            public ulong cFramesBuffersPresented;
+            public ulong cFramesBuffersDisplayed;
+            public ulong cCompleted;
+            public ulong cMergedInGdi;
+            public ulong cSystemRefresh;
+            public ulong cHit;
+            public ulong cLastFrameDisplayed;
+            public ulong qpcFrameDisplayed;
+            public ulong cCoreRenders;
+            public ulong cCorePresent;
+            public ulong cCoreRefresh;
+            public ulong cCoreComposed;
+        }
+
+        [DllImport("dwmapi.dll", EntryPoint = "DwmGetCompositionTimingInfo")]
+        private static extern int DwmGetCompositionTimingInfo(IntPtr hwnd, ref DWM_TIMING_INFO timingInfo);
+
+        private ulong prevDwmFrameCount = 0;
+        private DateTime prevDwmTime = DateTime.UtcNow;
+
+        private int GetRealDwmFps()
+        {
+            try
+            {
+                DWM_TIMING_INFO timingInfo = new DWM_TIMING_INFO();
+                timingInfo.cbSize = (uint)Marshal.SizeOf(typeof(DWM_TIMING_INFO));
+                int hr = DwmGetCompositionTimingInfo(IntPtr.Zero, ref timingInfo);
+
+                if (hr == 0)
+                {
+                    ulong currentFrameCount = timingInfo.cFrameDisplayed;
+                    DateTime now = DateTime.UtcNow;
+                    double elapsedSec = (now - prevDwmTime).TotalSeconds;
+
+                    if (prevDwmFrameCount > 0 && elapsedSec > 0.05)
+                    {
+                        double fps = (currentFrameCount - prevDwmFrameCount) / elapsedSec;
+                        prevDwmFrameCount = currentFrameCount;
+                        prevDwmTime = now;
+                        if (fps > 0 && fps < 360) return (int)Math.Round(fps);
+                    }
+
+                    prevDwmFrameCount = currentFrameCount;
+                    prevDwmTime = now;
+                }
+            }
+            catch { }
+
+            return 0;
+        }
+
         private void QueueSensorUpdate()
         {
             if (Interlocked.Exchange(ref sensorUpdateInProgress, 1) == 1) return;
@@ -1638,11 +1717,20 @@ namespace LiteOverlay
             {
                 try
                 {
-                    // 1. Live FPS Counter
-                    double elapsedSeconds = Math.Max(0.001, fpsStopwatch.Elapsed.TotalSeconds);
-                    AppState.Fps = (int)Math.Round(frameCount / elapsedSeconds);
+                    // 1. Live Real Presentation FPS Counter (DWM Graphics API)
+                    int realDwmFps = GetRealDwmFps();
+                    if (realDwmFps > 0)
+                    {
+                        AppState.Fps = realDwmFps;
+                    }
+                    else
+                    {
+                        double elapsedSeconds = Math.Max(0.001, fpsStopwatch.Elapsed.TotalSeconds);
+                        AppState.Fps = (int)Math.Round(frameCount / elapsedSeconds);
+                    }
                     frameCount = 0;
                     fpsStopwatch.Restart();
+
 
                     // 2. Real Network Ping Latency (ICMP)
                     try
