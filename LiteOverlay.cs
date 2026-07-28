@@ -1,6 +1,7 @@
 // LiteOverlay.exe - Main Desktop Application
-// Launches Microsoft Edge in --app mode (proper Chromium rendering)
+// Launches Microsoft Edge in --app mode (Chromium rendering, same as browser)
 // with a built-in lightweight HTTP server for local web files.
+// The app window looks EXACTLY like the browser version with full CSS.
 
 using System;
 using System.Diagnostics;
@@ -17,7 +18,6 @@ namespace LiteOverlay
         private static HttpListener listener;
         private static string appDir;
         private static int serverPort = 18990;
-        private static Process browserProcess;
 
         [STAThread]
         static void Main()
@@ -27,78 +27,117 @@ namespace LiteOverlay
             // Start internal HTTP Server
             if (!StartLocalServer())
             {
-                MessageBox.Show("LiteOverlay HTTP Server start nahi ho saka.\nPort " + serverPort + " shayad busy hai.",
-                    "LiteOverlay Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
-                return;
+                // Try alternate port
+                serverPort = 19880;
+                if (!StartLocalServer())
+                {
+                    MessageBox.Show(
+                        "LiteOverlay HTTP Server start nahi ho saka.\nDono ports (18990, 19880) busy hain.",
+                        "LiteOverlay Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    return;
+                }
             }
 
             string url = "http://localhost:" + serverPort + "/";
 
-            // Find Edge or Chrome executable path
+            // Find Edge or Chrome
             string browserPath = FindBrowser();
 
             if (browserPath != null)
             {
-                // Launch browser in --app mode (clean window, no tabs, no URL bar)
+                // Create a dedicated user-data-dir so Edge opens a SEPARATE clean app window
+                // (not merged into existing browser tabs)
+                string userDataDir = Path.Combine(appDir, "LiteOverlay_AppData");
+
                 ProcessStartInfo psi = new ProcessStartInfo();
                 psi.FileName = browserPath;
-                psi.Arguments = "--app=" + url + " --window-size=1150,750 --disable-extensions --new-window";
+                psi.Arguments = string.Format(
+                    "--app={0} --window-size=1150,750 --disable-extensions --user-data-dir=\"{1}\"",
+                    url, userDataDir);
                 psi.UseShellExecute = false;
 
                 try
                 {
-                    browserProcess = Process.Start(psi);
-                    browserProcess.WaitForExit();
+                    Process proc = Process.Start(psi);
+                    if (proc != null)
+                    {
+                        proc.WaitForExit();
+                    }
                 }
                 catch (Exception ex)
                 {
-                    MessageBox.Show("Browser launch failed: " + ex.Message, "LiteOverlay", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                    // If --app mode fails, try simple launch
+                    try
+                    {
+                        ProcessStartInfo fallbackPsi = new ProcessStartInfo();
+                        fallbackPsi.FileName = browserPath;
+                        fallbackPsi.Arguments = url;
+                        fallbackPsi.UseShellExecute = false;
+                        Process fallbackProc = Process.Start(fallbackPsi);
+                        if (fallbackProc != null) fallbackProc.WaitForExit();
+                    }
+                    catch
+                    {
+                        MessageBox.Show("Browser launch failed: " + ex.Message,
+                            "LiteOverlay", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                    }
                 }
             }
             else
             {
-                // Fallback: Open in default browser
+                // No Edge/Chrome found - open in whatever default browser
                 try
                 {
-                    Process.Start(url);
-                    // Keep server alive for 1 hour, user closes manually
-                    Thread.Sleep(3600000);
+                    ProcessStartInfo defPsi = new ProcessStartInfo();
+                    defPsi.FileName = url;
+                    defPsi.UseShellExecute = true;
+                    Process.Start(defPsi);
+
+                    MessageBox.Show(
+                        "LiteOverlay browser mein open ho gaya hai.\nYe window band mat karein - server chal raha hai.\n\nBand karne ke liye OK press karein.",
+                        "LiteOverlay Running",
+                        MessageBoxButtons.OK, MessageBoxIcon.Information);
                 }
                 catch (Exception ex)
                 {
-                    MessageBox.Show("No browser found: " + ex.Message, "LiteOverlay", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    MessageBox.Show("No browser found: " + ex.Message,
+                        "LiteOverlay", MessageBoxButtons.OK, MessageBoxIcon.Error);
                 }
             }
 
-            // Cleanup: stop HTTP server
             StopServer();
         }
 
         private static string FindBrowser()
         {
-            // Check common Edge paths
+            // Edge paths (Windows 10/11 pre-installed)
             string[] edgePaths = new string[] {
-                Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ProgramFilesX86), "Microsoft", "Edge", "Application", "msedge.exe"),
-                Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ProgramFiles), "Microsoft", "Edge", "Application", "msedge.exe"),
                 @"C:\Program Files (x86)\Microsoft\Edge\Application\msedge.exe",
-                @"C:\Program Files\Microsoft\Edge\Application\msedge.exe"
+                @"C:\Program Files\Microsoft\Edge\Application\msedge.exe",
+                Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ProgramFilesX86),
+                    "Microsoft", "Edge", "Application", "msedge.exe"),
+                Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ProgramFiles),
+                    "Microsoft", "Edge", "Application", "msedge.exe")
             };
 
-            foreach (string path in edgePaths)
+            foreach (string p in edgePaths)
             {
-                if (File.Exists(path)) return path;
+                if (File.Exists(p)) return p;
             }
 
-            // Check common Chrome paths
+            // Chrome paths
             string[] chromePaths = new string[] {
-                Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ProgramFilesX86), "Google", "Chrome", "Application", "chrome.exe"),
-                Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ProgramFiles), "Google", "Chrome", "Application", "chrome.exe"),
-                Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "Google", "Chrome", "Application", "chrome.exe")
+                Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ProgramFilesX86),
+                    "Google", "Chrome", "Application", "chrome.exe"),
+                Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ProgramFiles),
+                    "Google", "Chrome", "Application", "chrome.exe"),
+                Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
+                    "Google", "Chrome", "Application", "chrome.exe")
             };
 
-            foreach (string path in chromePaths)
+            foreach (string p in chromePaths)
             {
-                if (File.Exists(path)) return path;
+                if (File.Exists(p)) return p;
             }
 
             return null;
@@ -118,8 +157,8 @@ namespace LiteOverlay
                     {
                         try
                         {
-                            HttpListenerContext context = listener.GetContext();
-                            ThreadPool.QueueUserWorkItem(delegate { ProcessRequest(context); });
+                            HttpListenerContext ctx = listener.GetContext();
+                            ThreadPool.QueueUserWorkItem(delegate { ProcessRequest(ctx); });
                         }
                         catch { }
                     }
@@ -154,7 +193,6 @@ namespace LiteOverlay
                 string filename = context.Request.Url.AbsolutePath.TrimStart('/');
                 if (string.IsNullOrEmpty(filename)) filename = "index.html";
 
-                // Security: prevent directory traversal
                 filename = filename.Replace("..", "");
                 string filePath = Path.Combine(appDir, filename);
 
