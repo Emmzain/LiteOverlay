@@ -458,9 +458,19 @@ namespace LiteOverlay
 
         private Label lblFpsVal, lblPingVal, lblRamVal, lblCpuVal, lblGpuVal, lblTempVal, lblBatVal, lblBatSub, lblNetVal, lblDiskVal;
 
+        [DllImport("user32.dll")]
+        public static extern bool ReleaseCapture();
+
+        [DllImport("user32.dll")]
+        public static extern int SendMessage(IntPtr hWnd, int Msg, int wParam, int lParam);
+
+        private const int WM_NCLBUTTONDOWN = 0xA1;
+        private const int HT_CAPTION = 0x2;
+
         public DashboardForm()
         {
             DoubleBuffered = true;
+            FormBorderStyle = FormBorderStyle.None;
             Text = "LiteOverlay System Monitor & Gaming HUD";
             Size = new Size(1080, 700);
             StartPosition = FormStartPosition.CenterScreen;
@@ -474,6 +484,15 @@ namespace LiteOverlay
             hudWindow.Show();
 
             InitSensors();
+        }
+
+        protected override void OnPaint(PaintEventArgs e)
+        {
+            base.OnPaint(e);
+            using (Pen pen = new Pen(Color.FromArgb(27, 38, 59), 1))
+            {
+                e.Graphics.DrawRectangle(pen, 0, 0, Width - 1, Height - 1);
+            }
         }
 
         protected override void OnFormClosed(FormClosedEventArgs e)
@@ -518,6 +537,89 @@ namespace LiteOverlay
                 }
             };
             Controls.Add(headerPanel);
+
+            // Modern Custom Dark Title Bar
+            Panel titleBarPanel = new Panel { Dock = DockStyle.Top, Height = 36, BackColor = Color.FromArgb(9, 12, 19) };
+            titleBarPanel.Paint += (s, e) =>
+            {
+                using (Pen pen = new Pen(Color.FromArgb(22, 28, 43), 1))
+                {
+                    e.Graphics.DrawLine(pen, 0, titleBarPanel.Height - 1, titleBarPanel.Width, titleBarPanel.Height - 1);
+                }
+            };
+
+            Label lblAppTitle = new Label
+            {
+                Text = "⚡  LiteOverlay System Monitor & Gaming HUD",
+                Font = new Font("Segoe UI", 9f, FontStyle.Bold),
+                ForeColor = Color.FromArgb(148, 163, 184),
+                Location = new Point(14, 9),
+                AutoSize = true,
+                Cursor = Cursors.Default
+            };
+            titleBarPanel.Controls.Add(lblAppTitle);
+
+            MouseEventHandler dragHandler = (s, e) =>
+            {
+                if (e.Button == MouseButtons.Left)
+                {
+                    ReleaseCapture();
+                    SendMessage(Handle, WM_NCLBUTTONDOWN, HT_CAPTION, 0);
+                }
+            };
+
+            titleBarPanel.MouseDown += dragHandler;
+            lblAppTitle.MouseDown += dragHandler;
+
+            Button btnClose = new Button
+            {
+                Text = "✕",
+                Size = new Size(42, 35),
+                Dock = DockStyle.Right,
+                FlatStyle = FlatStyle.Flat,
+                Font = new Font("Segoe UI", 9f, FontStyle.Regular),
+                ForeColor = Color.FromArgb(148, 163, 184),
+                Cursor = Cursors.Hand
+            };
+            btnClose.FlatAppearance.BorderSize = 0;
+            btnClose.FlatAppearance.MouseOverBackColor = Color.FromArgb(229, 57, 53);
+            btnClose.Click += (s, e) => Close();
+
+            Button btnMax = new Button
+            {
+                Text = "□",
+                Size = new Size(42, 35),
+                Dock = DockStyle.Right,
+                FlatStyle = FlatStyle.Flat,
+                Font = new Font("Segoe UI", 9f, FontStyle.Regular),
+                ForeColor = Color.FromArgb(148, 163, 184),
+                Cursor = Cursors.Hand
+            };
+            btnMax.FlatAppearance.BorderSize = 0;
+            btnMax.FlatAppearance.MouseOverBackColor = Color.FromArgb(27, 38, 59);
+            btnMax.Click += (s, e) =>
+            {
+                WindowState = WindowState == FormWindowState.Maximized ? FormWindowState.Normal : FormWindowState.Maximized;
+            };
+
+            Button btnMin = new Button
+            {
+                Text = "—",
+                Size = new Size(42, 35),
+                Dock = DockStyle.Right,
+                FlatStyle = FlatStyle.Flat,
+                Font = new Font("Segoe UI", 9f, FontStyle.Regular),
+                ForeColor = Color.FromArgb(148, 163, 184),
+                Cursor = Cursors.Hand
+            };
+            btnMin.FlatAppearance.BorderSize = 0;
+            btnMin.FlatAppearance.MouseOverBackColor = Color.FromArgb(27, 38, 59);
+            btnMin.Click += (s, e) => WindowState = FormWindowState.Minimized;
+
+            titleBarPanel.Controls.Add(btnMin);
+            titleBarPanel.Controls.Add(btnMax);
+            titleBarPanel.Controls.Add(btnClose);
+            Controls.Add(titleBarPanel);
 
             Label lblBadge = new Label
             {
