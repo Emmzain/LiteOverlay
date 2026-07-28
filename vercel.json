@@ -1,6 +1,7 @@
 {
   "version": 2,
   "name": "lite-overlay",
+  "outputDirectory": ".",
   "cleanUrls": true,
   "headers": [
     {

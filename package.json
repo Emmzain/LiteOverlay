@@ -4,8 +4,7 @@
   "description": "Ultra Low-End Gaming Performance HUD & Hardware System Monitor",
   "main": "index.html",
   "scripts": {
-    "dev": "python -m http.server 8080",
-    "build": "echo Web build ready"
+    "dev": "python -m http.server 8080"
   },
   "keywords": [
     "liteoverlay",
