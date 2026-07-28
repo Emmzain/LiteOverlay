@@ -25,4 +25,13 @@ if ($LASTEXITCODE -ne 0) {
     throw "LiteOverlay.exe build failed."
 }
 
-Write-Host "Built native LiteOverlay.exe successfully."
+& $csc /nologo /target:winexe /win32icon:app.ico /out:SetupLiteOverlay.exe `
+    /reference:System.Windows.Forms.dll `
+    /reference:System.Drawing.dll `
+    SetupLiteOverlay.cs
+
+if ($LASTEXITCODE -ne 0) {
+    throw "SetupLiteOverlay.exe build failed."
+}
+
+Write-Host "Built native LiteOverlay.exe and SetupLiteOverlay.exe successfully."
