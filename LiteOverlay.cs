@@ -988,12 +988,24 @@ namespace LiteOverlay
                     }
                 }
 
-                // Icon + Label
-                string fullText = icon + "  " + label;
+                // Icon (Segoe UI Emoji) + Label (Segoe UI)
+                try
+                {
+                    using (Font iconFont = new Font("Segoe UI Emoji", 9f, FontStyle.Regular))
+                    using (SolidBrush iconBrush = new SolidBrush(Color.White))
+                    {
+                        g.DrawString(icon, iconFont, iconBrush, 34, 13);
+                    }
+                }
+                catch
+                {
+                    // Fallback
+                }
+
                 using (Font font = new Font("Segoe UI", 8.8f, FontStyle.Bold))
                 using (SolidBrush textBrush = new SolidBrush(Color.White))
                 {
-                    g.DrawString(fullText, font, textBrush, 36, 14);
+                    g.DrawString(label, font, textBrush, 52, 14);
                 }
             };
 
