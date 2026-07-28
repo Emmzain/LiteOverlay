@@ -1,0 +1,5 @@
+1. LiteOverlay - Lightweight Gaming Performance HUD & Hardware System Monitor for Low-End PCs.
+2. Built using native C# (.NET Framework) with standalone executable (LiteOverlay.exe) requiring zero browser overhead.
+3. Features a transparent per-pixel always-on-top HUD overlay for FPS, Ping, RAM, CPU, GPU, and Temperature monitoring during gameplay.
+4. Includes a modern dark gaming dashboard UI with customizable themes, layouts, sliders, and refresh rate modes.
+5. Designed for minimal RAM footprint (~15 MB) and 0% CPU lag on low-end laptops and gaming PCs.
