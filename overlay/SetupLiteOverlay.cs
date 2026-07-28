@@ -1,11 +1,12 @@
-// SetupLiteOverlay.exe - Premium Dark Theme Windows Installer
-// Matches website dark UI with neon green accents
+// SetupLiteOverlay.exe - Modern Dark Custom Borderless Windows Installer
+// Features: Instant file installation, SHChangeNotify File Explorer refresh, custom titlebar
 using System;
 using System.Diagnostics;
 using System.Drawing;
 using System.Drawing.Drawing2D;
 using System.IO;
 using System.Reflection;
+using System.Runtime.InteropServices;
 using System.Windows.Forms;
 using Microsoft.Win32;
 
@@ -20,6 +21,28 @@ namespace LiteOverlaySetup
             Application.SetCompatibleTextRenderingDefault(false);
             Application.Run(new InstallerForm());
         }
+    }
+
+    // ═══════════════════════════════════════════
+    //  Win32 Shell Refresh Notification
+    // ═══════════════════════════════════════════
+    internal static class NativeMethods
+    {
+        [DllImport("shell32.dll", CharSet = CharSet.Auto, SetLastError = true)]
+        public static extern void SHChangeNotify(uint wEventId, uint uFlags, IntPtr dwItem1, IntPtr dwItem2);
+
+        public const uint SHCNE_UPDATEDIR = 0x00001000;
+        public const uint SHCNE_CREATE = 0x00000002;
+        public const uint SHCNF_PATHW = 0x0005;
+
+        public const int WM_NCLBUTTONDOWN = 0xA1;
+        public const int HT_CAPTION = 0x2;
+
+        [DllImport("user32.dll")]
+        public static extern int SendMessage(IntPtr hWnd, int Msg, int wParam, int lParam);
+
+        [DllImport("user32.dll")]
+        public static extern bool ReleaseCapture();
     }
 
     // ═══════════════════════════════════════════
@@ -260,15 +283,17 @@ namespace LiteOverlaySetup
     // ═══════════════════════════════════════════
     public class InstallerForm : Form
     {
-        // ── Colors (match website) ──
         private static readonly Color BG_MAIN = Color.FromArgb(12, 14, 18);
         private static readonly Color BG_HEADER = Color.FromArgb(16, 19, 26);
         private static readonly Color BG_CARD = Color.FromArgb(20, 24, 32);
         private static readonly Color ACCENT = Color.FromArgb(0, 230, 118);
-        private static readonly Color ACCENT_DIM = Color.FromArgb(0, 180, 90);
         private static readonly Color TEXT_PRIMARY = Color.FromArgb(225, 230, 240);
         private static readonly Color TEXT_MUTED = Color.FromArgb(120, 135, 160);
         private static readonly Color BORDER_COLOR = Color.FromArgb(36, 42, 56);
+
+        private Panel titleBarPanel;
+        private Label btnCloseWindow;
+        private Label btnMinWindow;
 
         private DarkTextBox txtInstallPath;
         private DarkCheckBox chkDesktopShortcut;
@@ -282,18 +307,16 @@ namespace LiteOverlaySetup
             "LiteOverlay.exe"
         };
 
-
         public InstallerForm()
         {
             this.Text = "LiteOverlay Setup";
-            this.Size = new Size(620, 500);
+            this.Size = new Size(620, 520);
             this.StartPosition = FormStartPosition.CenterScreen;
-            this.FormBorderStyle = FormBorderStyle.FixedDialog;
+            this.FormBorderStyle = FormBorderStyle.None; // Custom Modern Borderless Form
             this.MaximizeBox = false;
             this.BackColor = BG_MAIN;
             this.ForeColor = TEXT_PRIMARY;
             this.DoubleBuffered = true;
-            this.Icon = SystemIcons.Application;
 
             BuildUI();
         }
@@ -304,42 +327,40 @@ namespace LiteOverlaySetup
             Graphics g = e.Graphics;
             g.SmoothingMode = SmoothingMode.AntiAlias;
 
-            // ── Top Header Gradient Bar ──
+            // Outer Neon Green Accent Border Stroke
+            using (Pen borderPen = new Pen(Color.FromArgb(0, 230, 118), 1.5f))
+            {
+                g.DrawRectangle(borderPen, 0, 0, Width - 1, Height - 1);
+            }
+
+            // Top Header Background
             using (LinearGradientBrush headerBrush = new LinearGradientBrush(
-                new Rectangle(0, 0, Width, 110), BG_HEADER, BG_MAIN, 90f))
+                new Rectangle(0, 36, Width, 110), BG_HEADER, BG_MAIN, 90f))
             {
-                g.FillRectangle(headerBrush, 0, 0, Width, 110);
+                g.FillRectangle(headerBrush, 0, 36, Width, 110);
             }
 
-            // Subtle accent glow line at top
-            using (LinearGradientBrush glowBrush = new LinearGradientBrush(
-                new Point(0, 0), new Point(Width, 0),
-                Color.FromArgb(0, ACCENT), Color.FromArgb(80, ACCENT)))
+            // Lightning bolt icon
+            using (Font iconFont = new Font("Segoe UI", 26f))
             {
-                g.FillRectangle(glowBrush, 0, 0, Width, 2);
+                g.DrawString("\u26A1", iconFont, new SolidBrush(ACCENT), new PointF(28, 48));
             }
 
-            // ── Lightning bolt icon ──
-            using (Font iconFont = new Font("Segoe UI", 28f))
+            // Title
+            using (Font titleFont = new Font("Segoe UI", 19f, FontStyle.Bold))
             {
-                g.DrawString("\u26A1", iconFont, new SolidBrush(ACCENT), new PointF(30, 16));
+                g.DrawString("LiteOverlay", titleFont, new SolidBrush(TEXT_PRIMARY), new PointF(76, 52));
             }
 
-            // ── Title ──
-            using (Font titleFont = new Font("Segoe UI", 20f, FontStyle.Bold))
-            {
-                g.DrawString("LiteOverlay", titleFont, new SolidBrush(TEXT_PRIMARY), new PointF(80, 22));
-            }
-
-            // ── Subtitle ──
-            using (Font subFont = new Font("Segoe UI", 9.5f))
+            // Subtitle
+            using (Font subFont = new Font("Segoe UI", 9f))
             {
                 g.DrawString("Setup Wizard  \u2022  Ultra Low-End System Monitor  \u2022  v1.0",
-                    subFont, new SolidBrush(TEXT_MUTED), new PointF(82, 58));
+                    subFont, new SolidBrush(TEXT_MUTED), new PointF(78, 86));
             }
 
-            // ── Version badge ──
-            RectangleF badgeRect = new RectangleF(Width - 120, 28, 72, 24);
+            // Version badge
+            RectangleF badgeRect = new RectangleF(Width - 110, 56, 72, 24);
             GraphicsPath badgePath = RoundRectF(badgeRect, 12);
             g.FillPath(new SolidBrush(Color.FromArgb(30, 0, 230, 118)), badgePath);
             g.DrawPath(new Pen(Color.FromArgb(80, 0, 230, 118), 1f), badgePath);
@@ -351,43 +372,104 @@ namespace LiteOverlaySetup
                 g.DrawString("v1.0.0", badgeFont, new SolidBrush(ACCENT), badgeRect, sf);
             }
 
-            // ── Separator line ──
+            // Separator line
             using (Pen sepPen = new Pen(BORDER_COLOR, 1f))
             {
-                g.DrawLine(sepPen, 30, 108, Width - 30, 108);
+                g.DrawLine(sepPen, 28, 138, Width - 28, 138);
             }
 
-            // ── Card background for settings ──
-            Rectangle cardRect = new Rectangle(28, 120, Width - 76, 225);
+            // Card background for settings
+            Rectangle cardRect = new Rectangle(28, 150, Width - 56, 230);
             GraphicsPath cardPath = RoundRect(cardRect, 10);
             g.FillPath(new SolidBrush(BG_CARD), cardPath);
             g.DrawPath(new Pen(BORDER_COLOR, 1f), cardPath);
 
-            // ── "Installation Directory" label ──
+            // "Installation Directory" label
             using (Font lblFont = new Font("Segoe UI", 10.5f, FontStyle.Bold))
             {
-                g.DrawString("Installation Directory", lblFont, new SolidBrush(TEXT_PRIMARY), new PointF(48, 135));
+                g.DrawString("Installation Directory", lblFont, new SolidBrush(TEXT_PRIMARY), new PointF(48, 165));
             }
 
             using (Font descFont = new Font("Segoe UI", 8.5f))
             {
                 g.DrawString("Choose where LiteOverlay will be installed on your computer.",
-                    descFont, new SolidBrush(TEXT_MUTED), new PointF(48, 158));
+                    descFont, new SolidBrush(TEXT_MUTED), new PointF(48, 188));
             }
 
-            // ── "Options" section label ──
+            // "Options" section label
             using (Font optFont = new Font("Segoe UI", 10.5f, FontStyle.Bold))
             {
-                g.DrawString("Options", optFont, new SolidBrush(TEXT_PRIMARY), new PointF(48, 248));
+                g.DrawString("Options", optFont, new SolidBrush(TEXT_PRIMARY), new PointF(48, 275));
             }
         }
 
         private void BuildUI()
         {
+            // ── Modern Custom Dark Title Bar ──
+            titleBarPanel = new Panel
+            {
+                Location = new Point(0, 0),
+                Size = new Size(Width, 36),
+                BackColor = Color.FromArgb(16, 19, 26)
+            };
+
+            titleBarPanel.MouseDown += (s, e) =>
+            {
+                if (e.Button == MouseButtons.Left)
+                {
+                    NativeMethods.ReleaseCapture();
+                    NativeMethods.SendMessage(Handle, NativeMethods.WM_NCLBUTTONDOWN, NativeMethods.HT_CAPTION, 0);
+                }
+            };
+
+            Label lblBarTitle = new Label
+            {
+                Text = "⚡ LiteOverlay Setup",
+                Font = new Font("Segoe UI", 9f, FontStyle.Bold),
+                ForeColor = Color.FromArgb(148, 163, 184),
+                Location = new Point(14, 9),
+                AutoSize = true
+            };
+            titleBarPanel.Controls.Add(lblBarTitle);
+
+            // Close Window Button (✕)
+            btnCloseWindow = new Label
+            {
+                Text = "✕",
+                Font = new Font("Segoe UI", 10f, FontStyle.Bold),
+                ForeColor = Color.FromArgb(148, 163, 184),
+                Location = new Point(Width - 36, 6),
+                Size = new Size(28, 24),
+                TextAlign = ContentAlignment.MiddleCenter,
+                Cursor = Cursors.Hand
+            };
+            btnCloseWindow.MouseEnter += (s, e) => { btnCloseWindow.ForeColor = Color.Red; };
+            btnCloseWindow.MouseLeave += (s, e) => { btnCloseWindow.ForeColor = Color.FromArgb(148, 163, 184); };
+            btnCloseWindow.Click += (s, e) => { this.Close(); };
+            titleBarPanel.Controls.Add(btnCloseWindow);
+
+            // Minimize Window Button (─)
+            btnMinWindow = new Label
+            {
+                Text = "─",
+                Font = new Font("Segoe UI", 9f, FontStyle.Bold),
+                ForeColor = Color.FromArgb(148, 163, 184),
+                Location = new Point(Width - 68, 6),
+                Size = new Size(28, 24),
+                TextAlign = ContentAlignment.MiddleCenter,
+                Cursor = Cursors.Hand
+            };
+            btnMinWindow.MouseEnter += (s, e) => { btnMinWindow.ForeColor = Color.White; };
+            btnMinWindow.MouseLeave += (s, e) => { btnMinWindow.ForeColor = Color.FromArgb(148, 163, 184); };
+            btnMinWindow.Click += (s, e) => { this.WindowState = FormWindowState.Minimized; };
+            titleBarPanel.Controls.Add(btnMinWindow);
+
+            this.Controls.Add(titleBarPanel);
+
             // ── Path TextBox ──
             txtInstallPath = new DarkTextBox();
-            txtInstallPath.Location = new Point(48, 182);
-            txtInstallPath.Size = new Size(390, 34);
+            txtInstallPath.Location = new Point(48, 212);
+            txtInstallPath.Size = new Size(410, 34);
             txtInstallPath.PathText = @"C:\LiteOverlay";
             this.Controls.Add(txtInstallPath);
 
@@ -399,8 +481,8 @@ namespace LiteOverlaySetup
             btnBrowse.Text = "Browse...";
             btnBrowse.Font = new Font("Segoe UI", 9.5f);
             btnBrowse.ForeColor = TEXT_PRIMARY;
-            btnBrowse.Location = new Point(448, 182);
-            btnBrowse.Size = new Size(100, 34);
+            btnBrowse.Location = new Point(468, 212);
+            btnBrowse.Size = new Size(95, 34);
             btnBrowse.Click += BtnBrowse_Click;
             this.Controls.Add(btnBrowse);
 
@@ -410,14 +492,14 @@ namespace LiteOverlaySetup
             chkDesktopShortcut.Font = new Font("Segoe UI", 10f);
             chkDesktopShortcut.ForeColor = Color.FromArgb(200, 210, 225);
             chkDesktopShortcut.Checked = true;
-            chkDesktopShortcut.Location = new Point(48, 278);
+            chkDesktopShortcut.Location = new Point(48, 305);
             chkDesktopShortcut.Size = new Size(300, 28);
             this.Controls.Add(chkDesktopShortcut);
 
             // ── Progress Bar ──
             progressBar = new DarkProgressBar();
-            progressBar.Location = new Point(28, 365);
-            progressBar.Size = new Size(Width - 76, 8);
+            progressBar.Location = new Point(28, 395);
+            progressBar.Size = new Size(Width - 56, 8);
             progressBar.Maximum = 100;
             progressBar.Value = 0;
             progressBar.Visible = false;
@@ -430,7 +512,7 @@ namespace LiteOverlaySetup
             lblStatus.ForeColor = TEXT_MUTED;
             lblStatus.AutoSize = true;
             lblStatus.BackColor = Color.Transparent;
-            lblStatus.Location = new Point(28, 380);
+            lblStatus.Location = new Point(28, 410);
             this.Controls.Add(lblStatus);
 
             // ── Install Button ──
@@ -441,8 +523,8 @@ namespace LiteOverlaySetup
             btnInstall.Text = "\u26A1  Install LiteOverlay";
             btnInstall.Font = new Font("Segoe UI", 12f, FontStyle.Bold);
             btnInstall.ForeColor = Color.White;
-            btnInstall.Location = new Point(28, 405);
-            btnInstall.Size = new Size(280, 48);
+            btnInstall.Location = new Point(28, 440);
+            btnInstall.Size = new Size(300, 48);
             btnInstall.Click += BtnInstall_Click;
             this.Controls.Add(btnInstall);
 
@@ -454,8 +536,8 @@ namespace LiteOverlaySetup
             btnCancel.Text = "Cancel";
             btnCancel.Font = new Font("Segoe UI", 10.5f);
             btnCancel.ForeColor = Color.FromArgb(180, 180, 200);
-            btnCancel.Location = new Point(320, 405);
-            btnCancel.Size = new Size(150, 48);
+            btnCancel.Location = new Point(345, 440);
+            btnCancel.Size = new Size(140, 48);
             btnCancel.Click += delegate { this.Close(); };
             this.Controls.Add(btnCancel);
         }
@@ -490,7 +572,7 @@ namespace LiteOverlaySetup
 
             try
             {
-                // Step 1: Create install directory
+                // Step 1: Create install directory instantly
                 lblStatus.Text = "Creating installation folder...";
                 lblStatus.ForeColor = TEXT_MUTED;
                 Application.DoEvents();
@@ -500,11 +582,18 @@ namespace LiteOverlaySetup
                 }
                 progressBar.Value = 1;
 
-                // Step 2: Copy application files
+                // Step 2: Copy application binary instantly (no artificial delays!)
                 int filesCopied = 0;
                 foreach (string file in APP_FILES)
                 {
                     string srcFile = Path.Combine(sourceDir, file);
+
+                    // Check overlay/bin/ fallback if running from root or build script
+                    if (!File.Exists(srcFile))
+                    {
+                        srcFile = Path.Combine(sourceDir, "overlay", "bin", file);
+                    }
+
                     string destFile = Path.Combine(installDir, file);
 
                     lblStatus.Text = "Installing: " + file;
@@ -516,10 +605,9 @@ namespace LiteOverlaySetup
                         filesCopied++;
                     }
                     progressBar.Value = 1 + filesCopied;
-                    System.Threading.Thread.Sleep(200); // Visual feedback
                 }
 
-                // Step 3: Create Uninstaller
+                // Step 3: Create Uninstaller batch file
                 lblStatus.Text = "Creating uninstaller...";
                 Application.DoEvents();
                 string uninstallBat = Path.Combine(installDir, "Uninstall.bat");
@@ -598,6 +686,16 @@ namespace LiteOverlaySetup
                     catch { }
                 }
                 progressBar.Value = progressBar.Maximum;
+
+                // ⚡ Instant Windows Shell Notification (Forces File Explorer to refresh immediately!)
+                try
+                {
+                    IntPtr pInstallDir = Marshal.StringToHGlobalUni(installDir);
+                    NativeMethods.SHChangeNotify(NativeMethods.SHCNE_UPDATEDIR, NativeMethods.SHCNF_PATHW, pInstallDir, IntPtr.Zero);
+                    NativeMethods.SHChangeNotify(NativeMethods.SHCNE_CREATE, NativeMethods.SHCNF_PATHW, pInstallDir, IntPtr.Zero);
+                    Marshal.FreeHGlobal(pInstallDir);
+                }
+                catch { }
 
                 lblStatus.Text = "\u2713 Installation complete!";
                 lblStatus.ForeColor = ACCENT;
