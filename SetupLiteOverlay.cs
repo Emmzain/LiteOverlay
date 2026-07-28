@@ -279,8 +279,9 @@ namespace LiteOverlaySetup
         private Label lblStatus;
 
         private static readonly string[] APP_FILES = new string[] {
-            "index.html", "styles.css", "app.js", "tauri_bridge.js", "LiteOverlay.exe"
+            "LiteOverlay.exe"
         };
+
 
         public InstallerForm()
         {
