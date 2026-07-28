@@ -1,12 +1,13 @@
-// LiteOverlay.exe - Main Desktop Application
-// Launches Microsoft Edge in --app mode (Chromium rendering, same as browser)
-// with a built-in lightweight HTTP server for local web files.
-// The app window looks EXACTLY like the browser version with full CSS.
+// LiteOverlay.exe - Self-Contained Desktop Application
+// All web files (HTML, CSS, JS) are EMBEDDED inside this exe.
+// On first run, extracts files to its own directory, then launches Edge --app mode.
+// Single download = complete working app with beautiful dark UI.
 
 using System;
 using System.Diagnostics;
 using System.IO;
 using System.Net;
+using System.Reflection;
 using System.Text;
 using System.Threading;
 using System.Windows.Forms;
@@ -19,34 +20,42 @@ namespace LiteOverlay
         private static string appDir;
         private static int serverPort = 18990;
 
+        private static readonly string[] WEB_FILES = new string[] {
+            "index.html", "styles.css", "app.js", "tauri_bridge.js"
+        };
+
         [STAThread]
         static void Main()
         {
             appDir = AppDomain.CurrentDomain.BaseDirectory;
 
-            // Start internal HTTP Server
+            // Step 1: Extract embedded web files if they don't exist
+            ExtractEmbeddedFiles();
+
+            // Step 2: Start internal HTTP Server
             if (!StartLocalServer())
             {
-                // Try alternate port
                 serverPort = 19880;
                 if (!StartLocalServer())
                 {
-                    MessageBox.Show(
-                        "LiteOverlay HTTP Server start nahi ho saka.\nDono ports (18990, 19880) busy hain.",
-                        "LiteOverlay Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
-                    return;
+                    serverPort = 20100;
+                    if (!StartLocalServer())
+                    {
+                        MessageBox.Show(
+                            "LiteOverlay HTTP Server start nahi ho saka.\nPorts busy hain.",
+                            "LiteOverlay Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                        return;
+                    }
                 }
             }
 
             string url = "http://localhost:" + serverPort + "/";
 
-            // Find Edge or Chrome
+            // Step 3: Find Edge or Chrome and launch in --app mode
             string browserPath = FindBrowser();
 
             if (browserPath != null)
             {
-                // Create a dedicated user-data-dir so Edge opens a SEPARATE clean app window
-                // (not merged into existing browser tabs)
                 string userDataDir = Path.Combine(appDir, "LiteOverlay_AppData");
 
                 ProcessStartInfo psi = new ProcessStartInfo();
@@ -64,53 +73,58 @@ namespace LiteOverlay
                         proc.WaitForExit();
                     }
                 }
-                catch (Exception ex)
+                catch
                 {
-                    // If --app mode fails, try simple launch
-                    try
-                    {
-                        ProcessStartInfo fallbackPsi = new ProcessStartInfo();
-                        fallbackPsi.FileName = browserPath;
-                        fallbackPsi.Arguments = url;
-                        fallbackPsi.UseShellExecute = false;
-                        Process fallbackProc = Process.Start(fallbackPsi);
-                        if (fallbackProc != null) fallbackProc.WaitForExit();
-                    }
-                    catch
-                    {
-                        MessageBox.Show("Browser launch failed: " + ex.Message,
-                            "LiteOverlay", MessageBoxButtons.OK, MessageBoxIcon.Warning);
-                    }
+                    // Fallback: open in default browser
+                    LaunchDefaultBrowser(url);
                 }
             }
             else
             {
-                // No Edge/Chrome found - open in whatever default browser
-                try
-                {
-                    ProcessStartInfo defPsi = new ProcessStartInfo();
-                    defPsi.FileName = url;
-                    defPsi.UseShellExecute = true;
-                    Process.Start(defPsi);
-
-                    MessageBox.Show(
-                        "LiteOverlay browser mein open ho gaya hai.\nYe window band mat karein - server chal raha hai.\n\nBand karne ke liye OK press karein.",
-                        "LiteOverlay Running",
-                        MessageBoxButtons.OK, MessageBoxIcon.Information);
-                }
-                catch (Exception ex)
-                {
-                    MessageBox.Show("No browser found: " + ex.Message,
-                        "LiteOverlay", MessageBoxButtons.OK, MessageBoxIcon.Error);
-                }
+                LaunchDefaultBrowser(url);
             }
 
             StopServer();
         }
 
+        // ═══════════════════════════════════════════
+        //  Extract embedded resource files
+        // ═══════════════════════════════════════════
+        private static void ExtractEmbeddedFiles()
+        {
+            Assembly asm = Assembly.GetExecutingAssembly();
+
+            foreach (string file in WEB_FILES)
+            {
+                string destPath = Path.Combine(appDir, file);
+
+                // Always overwrite to keep files in sync with exe version
+                Stream stream = asm.GetManifestResourceStream(file);
+                if (stream != null)
+                {
+                    try
+                    {
+                        using (FileStream fs = new FileStream(destPath, FileMode.Create, FileAccess.Write))
+                        {
+                            byte[] buffer = new byte[4096];
+                            int bytesRead;
+                            while ((bytesRead = stream.Read(buffer, 0, buffer.Length)) > 0)
+                            {
+                                fs.Write(buffer, 0, bytesRead);
+                            }
+                        }
+                        stream.Close();
+                    }
+                    catch { }
+                }
+            }
+        }
+
+        // ═══════════════════════════════════════════
+        //  Browser Detection
+        // ═══════════════════════════════════════════
         private static string FindBrowser()
         {
-            // Edge paths (Windows 10/11 pre-installed)
             string[] edgePaths = new string[] {
                 @"C:\Program Files (x86)\Microsoft\Edge\Application\msedge.exe",
                 @"C:\Program Files\Microsoft\Edge\Application\msedge.exe",
@@ -125,7 +139,6 @@ namespace LiteOverlay
                 if (File.Exists(p)) return p;
             }
 
-            // Chrome paths
             string[] chromePaths = new string[] {
                 Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ProgramFilesX86),
                     "Google", "Chrome", "Application", "chrome.exe"),
@@ -143,6 +156,30 @@ namespace LiteOverlay
             return null;
         }
 
+        private static void LaunchDefaultBrowser(string url)
+        {
+            try
+            {
+                ProcessStartInfo defPsi = new ProcessStartInfo();
+                defPsi.FileName = url;
+                defPsi.UseShellExecute = true;
+                Process.Start(defPsi);
+
+                MessageBox.Show(
+                    "LiteOverlay browser mein open ho gaya hai.\nYe message band karne se app band ho jayegi.\n\nOK press karein jab done ho.",
+                    "LiteOverlay Running",
+                    MessageBoxButtons.OK, MessageBoxIcon.Information);
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show("Browser nahi mila: " + ex.Message,
+                    "LiteOverlay", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+        }
+
+        // ═══════════════════════════════════════════
+        //  HTTP Server
+        // ═══════════════════════════════════════════
         private static bool StartLocalServer()
         {
             try
