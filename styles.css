@@ -293,6 +293,19 @@ html, body {
   gap: 0.6rem;
 }
 
+.checkboxes-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.75rem 1rem;
+  margin-top: 0.5rem;
+}
+
+@media (max-width: 500px) {
+  .checkboxes-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
 .checkbox-label {
   display: flex;
   display: -ms-flexbox;
@@ -404,14 +417,15 @@ input:checked + .switch-slider:before {
   top: 30px;
   right: 30px;
   z-index: 999999;
-  background: rgba(12, 14, 18, 0.85) !important;
-  border: 1px solid #00e676 !important;
+  background: rgba(12, 14, 18, 0.85);
+  border: 1px solid #00e676;
   border-radius: 6px;
   padding: 0.5em 0.8em;
-  color: #ffffff !important;
+  color: #ffffff;
   font-family: 'Consolas', monospace;
   user-select: none;
   box-shadow: 0 0 12px rgba(0, 0, 0, 0.6);
+  transition: background-color 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease;
 }
 
 .game-overlay.hidden {

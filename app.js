@@ -245,14 +245,14 @@
     var alpha = (state.settings.opacity / 100).toFixed(2);
     var bgColor = state.settings.opacity === 0 ? 'transparent' : 'rgba(12, 14, 18, ' + alpha + ')';
     var sizePx = state.settings.fontSize + 'px';
-    var borderStyle = state.settings.showBorder ? '1px solid ' + state.settings.accentColor : 'none';
+    var borderStyle = state.settings.showBorder ? '1px solid ' + state.settings.accentColor : '1px solid transparent';
 
     var shadowStyle = 'none';
     if (state.settings.opacity > 0) {
-      shadowStyle = '0 0 12px rgba(0, 0, 0, 0.6)';
+      shadowStyle = '0 4px 16px rgba(0, 0, 0, 0.6)';
     }
-    if (state.settings.glowEffect && state.settings.showBorder) {
-      shadowStyle = '0 0 14px ' + state.settings.accentColor;
+    if (state.settings.showBorder && state.settings.glowEffect) {
+      shadowStyle = '0 0 14px ' + state.settings.accentColor + ', 0 4px 16px rgba(0, 0, 0, 0.6)';
     }
 
     if (elements.overlay) {
@@ -289,6 +289,17 @@
         var targetPane = document.getElementById(targetTabId);
         if (targetPane) targetPane.classList.add('active');
       });
+    }
+  }
+
+  function syncGlowCheckboxState() {
+    if (elements.toggleGlowCheckbox) {
+      elements.toggleGlowCheckbox.disabled = !state.settings.showBorder;
+      var container = document.getElementById('glow-checkbox-container');
+      if (container) {
+        container.style.opacity = state.settings.showBorder ? '1' : '0.45';
+        container.style.pointerEvents = state.settings.showBorder ? 'auto' : 'none';
+      }
     }
   }
 
@@ -369,6 +380,7 @@
       elements.toggleBorderCheckbox.checked = state.settings.showBorder;
       elements.toggleBorderCheckbox.addEventListener('change', function(e) {
         state.settings.showBorder = e.target.checked;
+        syncGlowCheckboxState();
         applyOverlayStyles();
       });
     }
@@ -388,6 +400,8 @@
         applyOverlayStyles();
       });
     }
+
+    syncGlowCheckboxState();
 
     if (elements.lowPowerCheckbox) {
       elements.lowPowerCheckbox.checked = state.settings.lowPower;
