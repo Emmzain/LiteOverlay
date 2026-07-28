@@ -670,26 +670,26 @@ namespace LiteOverlay
             };
             boxStats.Controls.Add(lblStatsSub);
 
-            // 3-Column Grid of Custom Chips
-            int colWidth = 145;
-            int rowHeight = 52;
+            // 3-Column Grid of Custom Checkbox Cards (Matching Reference)
+            int colWidth = 148;
+            int rowHeight = 56;
             int startX = 15;
             int startY = 75;
 
             // Row 0
-            boxStats.Controls.Add(CreateStatChip("Live FPS", AppState.ShowFps, startX, startY, v => AppState.ShowFps = v));
-            boxStats.Controls.Add(CreateStatChip("Ping (Latency)", AppState.ShowPing, startX + colWidth, startY, v => AppState.ShowPing = v));
-            boxStats.Controls.Add(CreateStatChip("RAM Usage", AppState.ShowRam, startX + (colWidth * 2), startY, v => AppState.ShowRam = v));
+            boxStats.Controls.Add(CreateStatChip("🎮", "Live FPS", AppState.ShowFps, startX, startY, v => AppState.ShowFps = v));
+            boxStats.Controls.Add(CreateStatChip("🌐", "Ping (Latency)", AppState.ShowPing, startX + colWidth, startY, v => AppState.ShowPing = v));
+            boxStats.Controls.Add(CreateStatChip("💻", "RAM Usage", AppState.ShowRam, startX + (colWidth * 2), startY, v => AppState.ShowRam = v));
 
             // Row 1
-            boxStats.Controls.Add(CreateStatChip("CPU Usage (%)", AppState.ShowCpu, startX, startY + rowHeight, v => AppState.ShowCpu = v));
-            boxStats.Controls.Add(CreateStatChip("GPU Usage (%)", AppState.ShowGpu, startX + colWidth, startY + rowHeight, v => AppState.ShowGpu = v));
-            boxStats.Controls.Add(CreateStatChip("Temp (°C)", AppState.ShowTemp, startX + (colWidth * 2), startY + rowHeight, v => AppState.ShowTemp = v));
+            boxStats.Controls.Add(CreateStatChip("⚙", "CPU Usage (%)", AppState.ShowCpu, startX, startY + rowHeight, v => AppState.ShowCpu = v));
+            boxStats.Controls.Add(CreateStatChip("🎛", "GPU Usage (%)", AppState.ShowGpu, startX + colWidth, startY + rowHeight, v => AppState.ShowGpu = v));
+            boxStats.Controls.Add(CreateStatChip("🌡", "Temp (°C)", AppState.ShowTemp, startX + (colWidth * 2), startY + rowHeight, v => AppState.ShowTemp = v));
 
             // Row 2
-            boxStats.Controls.Add(CreateStatChip("Battery %", AppState.ShowBattery, startX, startY + (rowHeight * 2), v => AppState.ShowBattery = v));
-            boxStats.Controls.Add(CreateStatChip("Network Speed", AppState.ShowNetwork, startX + colWidth, startY + (rowHeight * 2), v => AppState.ShowNetwork = v));
-            boxStats.Controls.Add(CreateStatChip("Disk Storage", AppState.ShowDisk, startX + (colWidth * 2), startY + (rowHeight * 2), v => AppState.ShowDisk = v));
+            boxStats.Controls.Add(CreateStatChip("🔋", "Battery %", AppState.ShowBattery, startX, startY + (rowHeight * 2), v => AppState.ShowBattery = v));
+            boxStats.Controls.Add(CreateStatChip("📶", "Network Speed", AppState.ShowNetwork, startX + colWidth, startY + (rowHeight * 2), v => AppState.ShowNetwork = v));
+            boxStats.Controls.Add(CreateStatChip("💽", "Disk Storage", AppState.ShowDisk, startX + (colWidth * 2), startY + (rowHeight * 2), v => AppState.ShowDisk = v));
 
             // Right Card: Overlay Appearance & Theme
             Panel boxApp = new Panel
@@ -924,55 +924,76 @@ namespace LiteOverlay
             boxApp.Controls.Add(chkLock);
         }
 
-        private Panel CreateStatChip(string label, bool initial, int x, int y, Action<bool> onChange)
+        private Panel CreateStatChip(string icon, string label, bool initial, int x, int y, Action<bool> onChange)
         {
             Panel p = new Panel
             {
                 Location = new Point(x, y),
-                Size = new Size(138, 44),
+                Size = new Size(142, 46),
                 BackColor = Color.FromArgb(15, 20, 34),
                 Cursor = Cursors.Hand
             };
 
             bool isChecked = initial;
+            bool isHovered = false;
+
+            p.MouseEnter += (s, e) => { isHovered = true; p.Invalidate(); };
+            p.MouseLeave += (s, e) => { isHovered = false; p.Invalidate(); };
 
             p.Paint += (s, e) =>
             {
                 Graphics g = e.Graphics;
                 g.SmoothingMode = SmoothingMode.AntiAlias;
 
-                using (Pen pen = new Pen(isChecked ? Color.FromArgb(0, 230, 118) : Color.FromArgb(27, 38, 59), 1))
+                Rectangle rect = new Rectangle(0, 0, p.Width - 1, p.Height - 1);
+                using (GraphicsPath path = GetRoundedRectPath(rect, 8))
                 {
-                    g.DrawRectangle(pen, 0, 0, p.Width - 1, p.Height - 1);
-                }
+                    using (SolidBrush bgBrush = new SolidBrush(Color.FromArgb(15, 20, 34)))
+                    {
+                        g.FillPath(bgBrush, path);
+                    }
 
-                // Draw Custom Check Square
-                Rectangle checkRect = new Rectangle(10, 13, 18, 18);
-                if (isChecked)
-                {
-                    using (SolidBrush bgBrush = new SolidBrush(Color.FromArgb(0, 230, 118)))
+                    Color borderColor = isHovered ? Color.FromArgb(0, 230, 118) : Color.FromArgb(27, 38, 59);
+                    using (Pen borderPen = new Pen(borderColor, isHovered ? 1.5f : 1f))
                     {
-                        g.FillRectangle(bgBrush, checkRect);
-                    }
-                    using (Font font = new Font("Segoe UI", 8.5f, FontStyle.Bold))
-                    using (SolidBrush textBrush = new SolidBrush(Color.FromArgb(6, 8, 14)))
-                    {
-                        g.DrawString("✓", font, textBrush, 12, 14);
-                    }
-                }
-                else
-                {
-                    using (Pen outlinePen = new Pen(Color.FromArgb(60, 75, 100), 1.5f))
-                    {
-                        g.DrawRectangle(outlinePen, checkRect);
+                        g.DrawPath(borderPen, path);
                     }
                 }
 
-                // Draw Text
+                // Checkbox Square (Left)
+                int cbSize = 18;
+                int cbY = (p.Height - cbSize) / 2;
+                Rectangle checkRect = new Rectangle(12, cbY, cbSize, cbSize);
+
+                using (GraphicsPath cbPath = GetRoundedRectPath(checkRect, 4))
+                {
+                    if (isChecked)
+                    {
+                        using (SolidBrush bgBrush = new SolidBrush(Color.FromArgb(0, 230, 118)))
+                        {
+                            g.FillPath(bgBrush, cbPath);
+                        }
+                        using (Font font = new Font("Segoe UI", 9f, FontStyle.Bold))
+                        using (SolidBrush checkBrush = new SolidBrush(Color.White))
+                        {
+                            g.DrawString("✓", font, checkBrush, 13, cbY + 1);
+                        }
+                    }
+                    else
+                    {
+                        using (SolidBrush whiteBrush = new SolidBrush(Color.White))
+                        {
+                            g.FillPath(whiteBrush, cbPath);
+                        }
+                    }
+                }
+
+                // Icon + Label
+                string fullText = icon + "  " + label;
                 using (Font font = new Font("Segoe UI", 8.8f, FontStyle.Bold))
-                using (SolidBrush textBrush = new SolidBrush(isChecked ? Color.White : Color.FromArgb(136, 152, 168)))
+                using (SolidBrush textBrush = new SolidBrush(Color.White))
                 {
-                    g.DrawString(label, font, textBrush, 33, 13);
+                    g.DrawString(fullText, font, textBrush, 36, 14);
                 }
             };
 
