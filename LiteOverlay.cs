@@ -11,6 +11,7 @@ using System.Drawing.Imaging;
 using System.Net.NetworkInformation;
 using System.Runtime.InteropServices;
 using System.Threading;
+using System.IO;
 using System.Windows.Forms;
 
 namespace LiteOverlay
@@ -476,7 +477,26 @@ namespace LiteOverlay
             StartPosition = FormStartPosition.CenterScreen;
             BackColor = Color.FromArgb(6, 8, 14);
             ForeColor = Color.White;
-            Icon = SystemIcons.Application;
+
+            try
+            {
+                string logoPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Logo.png");
+                if (File.Exists(logoPath))
+                {
+                    using (Bitmap bmp = new Bitmap(logoPath))
+                    {
+                        Icon = Icon.FromHandle(bmp.GetHicon());
+                    }
+                }
+                else if (File.Exists("app.ico"))
+                {
+                    Icon = new Icon("app.ico");
+                }
+            }
+            catch
+            {
+                Icon = SystemIcons.Application;
+            }
 
             BuildDashboardUI();
 
@@ -548,12 +568,27 @@ namespace LiteOverlay
                 }
             };
 
+            PictureBox picTitleLogo = new PictureBox
+            {
+                Location = new Point(12, 8),
+                Size = new Size(20, 20),
+                SizeMode = PictureBoxSizeMode.Zoom,
+                BackColor = Color.Transparent
+            };
+            try
+            {
+                string logoPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Logo.png");
+                if (File.Exists(logoPath)) picTitleLogo.Image = Image.FromFile(logoPath);
+            }
+            catch {}
+            titleBarPanel.Controls.Add(picTitleLogo);
+
             Label lblAppTitle = new Label
             {
-                Text = "⚡  LiteOverlay System Monitor & Gaming HUD",
+                Text = "LiteOverlay System Monitor & Gaming HUD",
                 Font = new Font("Segoe UI", 9f, FontStyle.Bold),
                 ForeColor = Color.FromArgb(148, 163, 184),
-                Location = new Point(14, 9),
+                Location = new Point(38, 9),
                 AutoSize = true,
                 Cursor = Cursors.Default
             };
@@ -569,6 +604,7 @@ namespace LiteOverlay
             };
 
             titleBarPanel.MouseDown += dragHandler;
+            picTitleLogo.MouseDown += dragHandler;
             lblAppTitle.MouseDown += dragHandler;
 
             Button btnClose = new Button
@@ -633,12 +669,27 @@ namespace LiteOverlay
             };
             headerPanel.Controls.Add(lblBadge);
 
+            PictureBox picHeaderLogo = new PictureBox
+            {
+                Location = new Point(155, 22),
+                Size = new Size(30, 30),
+                SizeMode = PictureBoxSizeMode.Zoom,
+                BackColor = Color.Transparent
+            };
+            try
+            {
+                string logoPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Logo.png");
+                if (File.Exists(logoPath)) picHeaderLogo.Image = Image.FromFile(logoPath);
+            }
+            catch {}
+            headerPanel.Controls.Add(picHeaderLogo);
+
             Label lblTitle = new Label
             {
-                Text = "⚡ LiteOverlay",
+                Text = "LiteOverlay",
                 Font = new Font("Segoe UI", 18, FontStyle.Bold),
                 ForeColor = Color.White,
-                Location = new Point(155, 20),
+                Location = new Point(190, 20),
                 AutoSize = true
             };
             headerPanel.Controls.Add(lblTitle);

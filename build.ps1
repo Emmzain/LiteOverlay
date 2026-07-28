@@ -16,7 +16,7 @@ if (-not (Test-Path $csc)) {
     throw "C# compiler not found. Install .NET Framework 4.x Developer Pack."
 }
 
-& $csc /nologo /target:winexe /out:LiteOverlay.exe `
+& $csc /nologo /target:winexe /win32icon:app.ico /out:LiteOverlay.exe `
     /reference:System.Windows.Forms.dll `
     /reference:System.Drawing.dll `
     LiteOverlay.cs
