@@ -1,8 +1,9 @@
-// LiteOverlay.exe - Native Windows Desktop Application
-// Native WinForms WebBrowser with IE11/Edge Emulation Mode (FEATURE_BROWSER_EMULATION = 11001)
-// Embedded HTTP Server & Always-On-Top (TopMost = true) for Games.
+// LiteOverlay.exe - Standalone Desktop Launcher & Overlay Server
+// Launches Microsoft Edge in --app mode (100% Chromium Dark Theme)
+// Fallback: Native WinForms Form with IE11 Edge Emulation.
 
 using System;
+using System.Diagnostics;
 using System.Drawing;
 using System.IO;
 using System.Net;
@@ -27,7 +28,6 @@ namespace LiteOverlay
         [STAThread]
         static void Main()
         {
-            // Enable IE11/Edge High-Performance Rendering Mode in Registry
             EnableEdgeEmulation();
 
             Application.EnableVisualStyles();
@@ -35,10 +35,10 @@ namespace LiteOverlay
 
             appDir = AppDomain.CurrentDomain.BaseDirectory;
 
-            // Extract embedded web assets
+            // Extract embedded web files
             ExtractEmbeddedFiles();
 
-            // Start internal local HTTP server
+            // Start local HTTP server
             if (!StartLocalServer())
             {
                 serverPort = 19880;
@@ -49,8 +49,43 @@ namespace LiteOverlay
                 }
             }
 
-            // Launch Native Windows Form Window
-            Application.Run(new OverlayForm());
+            string url = "http://localhost:" + serverPort + "/";
+
+            // Find Edge or Chrome
+            string browserPath = FindBrowser();
+
+            if (browserPath != null)
+            {
+                // Launch in Chromium --app mode for 100% pixel-perfect dark UI
+                string tempDir = Path.Combine(Path.GetTempPath(), "LiteOverlay_ChromiumData");
+
+                ProcessStartInfo psi = new ProcessStartInfo();
+                psi.FileName = browserPath;
+                psi.Arguments = string.Format(
+                    "--app={0} --window-size=1150,750 --disable-extensions --user-data-dir=\"{1}\"",
+                    url, tempDir);
+                psi.UseShellExecute = false;
+
+                try
+                {
+                    Process proc = Process.Start(psi);
+                    if (proc != null)
+                    {
+                        // Keep server running until window closes
+                        proc.WaitForExit();
+                    }
+                }
+                catch
+                {
+                    // Fallback to WinForms Window
+                    Application.Run(new OverlayForm(url));
+                }
+            }
+            else
+            {
+                // Fallback to WinForms Window
+                Application.Run(new OverlayForm(url));
+            }
 
             StopServer();
         }
@@ -59,12 +94,11 @@ namespace LiteOverlay
         {
             try
             {
-                string appName = System.IO.Path.GetFileName(System.Diagnostics.Process.GetCurrentProcess().MainModule.FileName);
+                string appName = Path.GetFileName(Process.GetCurrentProcess().MainModule.FileName);
                 using (RegistryKey key = Registry.CurrentUser.CreateSubKey(@"Software\Microsoft\Internet Explorer\Main\FeatureControl\FEATURE_BROWSER_EMULATION"))
                 {
                     if (key != null)
                     {
-                        // 11001 = IE11 Standards Mode (full CSS variables & modern layout)
                         key.SetValue(appName, 11001, RegistryValueKind.DWord);
                     }
                 }
@@ -79,7 +113,6 @@ namespace LiteOverlay
             foreach (string file in WEB_FILES)
             {
                 string destPath = Path.Combine(appDir, file);
-
                 Stream stream = asm.GetManifestResourceStream(file);
                 if (stream != null)
                 {
@@ -99,6 +132,39 @@ namespace LiteOverlay
                     catch { }
                 }
             }
+        }
+
+        private static string FindBrowser()
+        {
+            string[] edgePaths = new string[] {
+                @"C:\Program Files (x86)\Microsoft\Edge\Application\msedge.exe",
+                @"C:\Program Files\Microsoft\Edge\Application\msedge.exe",
+                Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ProgramFilesX86),
+                    "Microsoft", "Edge", "Application", "msedge.exe"),
+                Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ProgramFiles),
+                    "Microsoft", "Edge", "Application", "msedge.exe")
+            };
+
+            foreach (string p in edgePaths)
+            {
+                if (File.Exists(p)) return p;
+            }
+
+            string[] chromePaths = new string[] {
+                Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ProgramFilesX86),
+                    "Google", "Chrome", "Application", "chrome.exe"),
+                Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ProgramFiles),
+                    "Google", "Chrome", "Application", "chrome.exe"),
+                Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
+                    "Google", "Chrome", "Application", "chrome.exe")
+            };
+
+            foreach (string p in chromePaths)
+            {
+                if (File.Exists(p)) return p;
+            }
+
+            return null;
         }
 
         private static bool StartLocalServer()
@@ -192,19 +258,19 @@ namespace LiteOverlay
     {
         private WebBrowser browser;
 
-        public OverlayForm()
+        public OverlayForm(string targetUrl)
         {
             this.Text = "LiteOverlay System Monitor";
             this.Size = new Size(1150, 750);
             this.StartPosition = FormStartPosition.CenterScreen;
-            this.TopMost = true; // Always On Top Over Games
+            this.TopMost = true;
             this.BackColor = Color.FromArgb(12, 14, 18);
             this.Icon = SystemIcons.Application;
 
             browser = new WebBrowser();
             browser.Dock = DockStyle.Fill;
             browser.ScriptErrorsSuppressed = true;
-            browser.Url = new Uri("http://localhost:18990/");
+            browser.Url = new Uri(targetUrl);
 
             this.Controls.Add(browser);
         }
