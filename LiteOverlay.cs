@@ -785,51 +785,72 @@ namespace LiteOverlay
             Label lblLayout = new Label { Text = "HUD Layout Style:", Location = new Point(18, 118), AutoSize = true, Font = new Font("Segoe UI", 9f), ForeColor = Color.FromArgb(136, 152, 168) };
             boxApp.Controls.Add(lblLayout);
 
-            // Modern Owner-Drawn Dropdown
-            ComboBox cbLayout = new ComboBox
+            // Modern 2-Option Segmented Pill Bar
+            Panel panelLayoutSeg = new Panel
             {
                 Location = new Point(18, 140),
-                Width = 430,
-                Height = 36,
-                DropDownStyle = ComboBoxStyle.DropDownList,
-                DrawMode = DrawMode.OwnerDrawFixed,
-                ItemHeight = 28,
-                BackColor = Color.FromArgb(15, 20, 34),
-                ForeColor = Color.White,
-                Font = new Font("Segoe UI", 9.5f, FontStyle.Bold)
+                Size = new Size(430, 38),
+                BackColor = Color.FromArgb(15, 20, 34)
             };
-
-            cbLayout.DrawItem += (s, e) =>
+            panelLayoutSeg.Paint += (s, e) =>
             {
-                if (e.Index < 0) return;
-                Graphics g = e.Graphics;
-                g.SmoothingMode = SmoothingMode.AntiAlias;
-
-                bool isSelected = (e.State & DrawItemState.Selected) == DrawItemState.Selected;
-                Color bgColor = isSelected ? Color.FromArgb(0, 230, 118) : Color.FromArgb(15, 20, 34);
-                Color textColor = isSelected ? Color.FromArgb(6, 8, 14) : Color.White;
-
-                using (SolidBrush bgBrush = new SolidBrush(bgColor))
+                using (Pen pen = new Pen(Color.FromArgb(27, 38, 59), 1))
                 {
-                    g.FillRectangle(bgBrush, e.Bounds);
-                }
-
-                string itemText = cbLayout.Items[e.Index].ToString();
-                using (Font font = new Font("Segoe UI", 9.5f, FontStyle.Bold))
-                using (SolidBrush textBrush = new SolidBrush(textColor))
-                {
-                    g.DrawString(itemText, font, textBrush, e.Bounds.X + 10, e.Bounds.Y + 5);
+                    e.Graphics.DrawRectangle(pen, 0, 0, panelLayoutSeg.Width - 1, panelLayoutSeg.Height - 1);
                 }
             };
+            boxApp.Controls.Add(panelLayoutSeg);
 
-            cbLayout.Items.AddRange(new object[] { "Vertical Stack", "Horizontal Compact Bar" });
-            cbLayout.SelectedIndex = AppState.LayoutStyle == "Horizontal Compact Bar" ? 1 : 0;
-            cbLayout.SelectedIndexChanged += (s, e) =>
+            Button btnVertLayout = new Button
             {
-                AppState.LayoutStyle = cbLayout.SelectedItem.ToString();
+                Text = "☰  Vertical Stack",
+                Location = new Point(3, 3),
+                Size = new Size(210, 32),
+                FlatStyle = FlatStyle.Flat,
+                Font = new Font("Segoe UI", 9f, FontStyle.Bold),
+                Cursor = Cursors.Hand
+            };
+            btnVertLayout.FlatAppearance.BorderSize = 0;
+
+            Button btnHorizLayout = new Button
+            {
+                Text = "☲  Horizontal Bar",
+                Location = new Point(217, 3),
+                Size = new Size(210, 32),
+                FlatStyle = FlatStyle.Flat,
+                Font = new Font("Segoe UI", 9f, FontStyle.Bold),
+                Cursor = Cursors.Hand
+            };
+            btnHorizLayout.FlatAppearance.BorderSize = 0;
+
+            Action updateSegButtons = () =>
+            {
+                bool isVert = AppState.LayoutStyle == "Vertical Stack";
+
+                btnVertLayout.BackColor = isVert ? Color.FromArgb(24, 0, 230, 118) : Color.Transparent;
+                btnVertLayout.ForeColor = isVert ? Color.FromArgb(0, 230, 118) : Color.FromArgb(136, 152, 168);
+
+                btnHorizLayout.BackColor = !isVert ? Color.FromArgb(24, 0, 230, 118) : Color.Transparent;
+                btnHorizLayout.ForeColor = !isVert ? Color.FromArgb(0, 230, 118) : Color.FromArgb(136, 152, 168);
+            };
+
+            btnVertLayout.Click += (s, e) =>
+            {
+                AppState.LayoutStyle = "Vertical Stack";
+                updateSegButtons();
                 hudWindow.RefreshHud();
             };
-            boxApp.Controls.Add(cbLayout);
+
+            btnHorizLayout.Click += (s, e) =>
+            {
+                AppState.LayoutStyle = "Horizontal Compact Bar";
+                updateSegButtons();
+                hudWindow.RefreshHud();
+            };
+
+            updateSegButtons();
+            panelLayoutSeg.Controls.Add(btnVertLayout);
+            panelLayoutSeg.Controls.Add(btnHorizLayout);
 
             Label lblOp = new Label { Text = "Background Opacity: " + AppState.OpacityPct + "%", Location = new Point(18, 185), AutoSize = true, Font = new Font("Segoe UI", 9f), ForeColor = Color.FromArgb(136, 152, 168) };
             boxApp.Controls.Add(lblOp);
@@ -1063,72 +1084,200 @@ namespace LiteOverlay
             panelPerfTab = new Panel { Dock = DockStyle.Fill, AutoScroll = true };
             contentPanel.Controls.Add(panelPerfTab);
 
-            Panel boxPerf = new Panel
+            // Left Card: Data Refresh Rate Mode
+            Panel boxPerfRate = new Panel
             {
                 Location = new Point(10, 10),
-                Size = new Size(950, 520),
+                Size = new Size(475, 520),
                 BackColor = Color.FromArgb(9, 12, 19)
             };
-            boxPerf.Paint += (s, e) =>
+            boxPerfRate.Paint += (s, e) =>
             {
                 using (Pen pen = new Pen(Color.FromArgb(22, 28, 43), 1))
                 {
-                    e.Graphics.DrawRectangle(pen, 0, 0, boxPerf.Width - 1, boxPerf.Height - 1);
+                    e.Graphics.DrawRectangle(pen, 0, 0, boxPerfRate.Width - 1, boxPerfRate.Height - 1);
                 }
             };
-            panelPerfTab.Controls.Add(boxPerf);
+            panelPerfTab.Controls.Add(boxPerfRate);
 
-            Label lblPerfTitle = new Label
+            Label lblRateTitle = new Label
             {
-                Text = "🚀  Low-End Laptop Performance Settings",
+                Text = "🚀  Data Refresh Rate Mode",
                 Font = new Font("Segoe UI", 11.5f, FontStyle.Bold),
                 ForeColor = Color.White,
-                Location = new Point(20, 20),
+                Location = new Point(18, 16),
                 AutoSize = true
             };
-            boxPerf.Controls.Add(lblPerfTitle);
+            boxPerfRate.Controls.Add(lblRateTitle);
 
-            Label lblInterval = new Label { Text = "Data Refresh Interval:", Location = new Point(20, 60), AutoSize = true, Font = new Font("Segoe UI", 9.5f), ForeColor = Color.FromArgb(136, 152, 168) };
-            boxPerf.Controls.Add(lblInterval);
-
-            ComboBox cbInterval = new ComboBox
+            Label lblRateSub = new Label
             {
-                Location = new Point(20, 88),
-                Width = 420,
-                Height = 36,
-                DropDownStyle = ComboBoxStyle.DropDownList,
-                BackColor = Color.FromArgb(15, 20, 34),
+                Text = "Select sensor update frequency for optimal CPU balance.",
+                Font = new Font("Segoe UI", 8.5f, FontStyle.Regular),
+                ForeColor = Color.FromArgb(136, 152, 168),
+                Location = new Point(18, 42),
+                AutoSize = true
+            };
+            boxPerfRate.Controls.Add(lblRateSub);
+
+            // 4 Clickable Refresh Rate Chips
+            Tuple<string, string, int>[] rates = new Tuple<string, string, int>[]
+            {
+                Tuple.Create("⚡ Ultra Fast (250 ms)", "Highest polling frequency, max responsiveness", 250),
+                Tuple.Create("🚀 Recommended (500 ms)", "Optimal balanced refresh rate for gaming", 500),
+                Tuple.Create("🔋 Low CPU (1000 ms)", "Energy saver mode for laptop battery life", 1000),
+                Tuple.Create("🍃 Extreme Low CPU (2000 ms)", "Minimal background CPU & sensor overhead", 2000)
+            };
+
+            List<Panel> ratePanels = new List<Panel>();
+            int chipY = 75;
+
+            foreach (var item in rates)
+            {
+                int msValue = item.Item3;
+
+                Panel pRate = new Panel
+                {
+                    Location = new Point(18, chipY),
+                    Size = new Size(438, 58),
+                    BackColor = Color.FromArgb(15, 20, 34),
+                    Cursor = Cursors.Hand
+                };
+
+                ratePanels.Add(pRate);
+
+                pRate.Paint += (s, e) =>
+                {
+                    Graphics g = e.Graphics;
+                    g.SmoothingMode = SmoothingMode.AntiAlias;
+
+                    bool isSelected = (AppState.RefreshInterval == msValue);
+                    using (Pen pen = new Pen(isSelected ? Color.FromArgb(0, 230, 118) : Color.FromArgb(27, 38, 59), isSelected ? 1.5f : 1f))
+                    {
+                        g.DrawRectangle(pen, 0, 0, pRate.Width - 1, pRate.Height - 1);
+                    }
+
+                    if (isSelected)
+                    {
+                        using (SolidBrush accentBar = new SolidBrush(Color.FromArgb(0, 230, 118)))
+                        {
+                            g.FillRectangle(accentBar, 0, 0, 4, pRate.Height);
+                        }
+                    }
+                };
+
+                Label lblMain = new Label
+                {
+                    Text = item.Item1,
+                    Font = new Font("Segoe UI", 9.5f, FontStyle.Bold),
+                    ForeColor = Color.White,
+                    Location = new Point(16, 10),
+                    AutoSize = true,
+                    Cursor = Cursors.Hand
+                };
+
+                Label lblDesc = new Label
+                {
+                    Text = item.Item2,
+                    Font = new Font("Segoe UI", 8.2f),
+                    ForeColor = Color.FromArgb(136, 152, 168),
+                    Location = new Point(16, 32),
+                    AutoSize = true,
+                    Cursor = Cursors.Hand
+                };
+
+                EventHandler onClick = (s, e) =>
+                {
+                    AppState.RefreshInterval = msValue;
+                    metricsTimer.Interval = msValue;
+                    hudWindow.UpdateInterval(msValue);
+
+                    foreach (var panel in ratePanels) panel.Invalidate();
+                };
+
+                pRate.Click += onClick;
+                lblMain.Click += onClick;
+                lblDesc.Click += onClick;
+
+                pRate.Controls.Add(lblMain);
+                pRate.Controls.Add(lblDesc);
+                boxPerfRate.Controls.Add(pRate);
+
+                chipY += 68;
+            }
+
+            // Right Card: Engine Architecture & Features
+            Panel boxEngineInfo = new Panel
+            {
+                Location = new Point(500, 10),
+                Size = new Size(475, 520),
+                BackColor = Color.FromArgb(9, 12, 19)
+            };
+            boxEngineInfo.Paint += (s, e) =>
+            {
+                using (Pen pen = new Pen(Color.FromArgb(22, 28, 43), 1))
+                {
+                    e.Graphics.DrawRectangle(pen, 0, 0, boxEngineInfo.Width - 1, boxEngineInfo.Height - 1);
+                }
+            };
+            panelPerfTab.Controls.Add(boxEngineInfo);
+
+            Label lblEngTitle = new Label
+            {
+                Text = "⚡  Engine Architecture & Status",
+                Font = new Font("Segoe UI", 11.5f, FontStyle.Bold),
                 ForeColor = Color.White,
-                Font = new Font("Segoe UI", 9.5f)
+                Location = new Point(18, 16),
+                AutoSize = true
             };
-            cbInterval.Items.AddRange(new object[] { "250 ms (Ultra Fast)", "500 ms (Recommended)", "1000 ms (Low CPU)", "2000 ms (Extreme Low CPU)" });
-            cbInterval.SelectedIndex = 1;
-            cbInterval.SelectedIndexChanged += (s, e) =>
-            {
-                int ms = 500;
-                if (cbInterval.SelectedIndex == 0) ms = 250;
-                else if (cbInterval.SelectedIndex == 2) ms = 1000;
-                else if (cbInterval.SelectedIndex == 3) ms = 2000;
+            boxEngineInfo.Controls.Add(lblEngTitle);
 
-                AppState.RefreshInterval = ms;
-                metricsTimer.Interval = ms;
-                hudWindow.UpdateInterval(ms);
-            };
-            boxPerf.Controls.Add(cbInterval);
-
-            Label lblInfo = new Label
+            Label lblEngSub = new Label
             {
-                Text = "⚡ Pure Standalone C# Executable Engine\n\n" +
-                       "• Zero Browser Dependencies\n" +
-                       "• Always-On-Top Native Gaming HUD\n" +
-                       "• True Transparent Overlay (0% CPU overhead)\n" +
-                       "• Stays active above Fullscreen & Windowed Games",
-                Location = new Point(20, 160),
-                Size = new Size(880, 280),
-                Font = new Font("Segoe UI", 11, FontStyle.Regular),
-                ForeColor = Color.FromArgb(148, 163, 184)
+                Text = "Pure native standalone C# WinForms overlay engine.",
+                Font = new Font("Segoe UI", 8.5f, FontStyle.Regular),
+                ForeColor = Color.FromArgb(136, 152, 168),
+                Location = new Point(18, 42),
+                AutoSize = true
             };
-            boxPerf.Controls.Add(lblInfo);
+            boxEngineInfo.Controls.Add(lblEngSub);
+
+            Tuple<string, string>[] feats = new Tuple<string, string>[]
+            {
+                Tuple.Create("🎮 Always-On-Top Direct Gaming HUD", "Stays visible over fullscreen and windowed games"),
+                Tuple.Create("💎 Per-Pixel Alpha Layered Window", "True transparent rendering with 0% background opacity"),
+                Tuple.Create("🔥 Zero Web / Browser Overhead", "0% Chromium CPU & RAM footprint (No Web Engine)"),
+                Tuple.Create("🍃 Ultra-Low Memory Footprint", "Consistently stays under 15 MB RAM usage"),
+                Tuple.Create("⚙ ThreadPool Sensor Telemetry", "Non-blocking background hardware sensor monitoring loop")
+            };
+
+            int featY = 75;
+            foreach (var feat in feats)
+            {
+                Panel pFeat = new Panel
+                {
+                    Location = new Point(18, featY),
+                    Size = new Size(438, 54),
+                    BackColor = Color.FromArgb(15, 20, 34)
+                };
+
+                pFeat.Paint += (s, e) =>
+                {
+                    using (Pen pen = new Pen(Color.FromArgb(27, 38, 59), 1))
+                    {
+                        e.Graphics.DrawRectangle(pen, 0, 0, pFeat.Width - 1, pFeat.Height - 1);
+                    }
+                };
+
+                Label fTitle = new Label { Text = feat.Item1, Font = new Font("Segoe UI", 9f, FontStyle.Bold), ForeColor = Color.White, Location = new Point(14, 8), AutoSize = true };
+                Label fSub = new Label { Text = feat.Item2, Font = new Font("Segoe UI", 8.2f), ForeColor = Color.FromArgb(136, 152, 168), Location = new Point(14, 28), AutoSize = true };
+
+                pFeat.Controls.Add(fTitle);
+                pFeat.Controls.Add(fSub);
+                boxEngineInfo.Controls.Add(pFeat);
+
+                featY += 64;
+            }
         }
 
         private PerformanceCounter cpuCounter;
