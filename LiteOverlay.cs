@@ -449,7 +449,7 @@ namespace LiteOverlay
         private Button btnTabOverlay;
         private Button btnTabSystem;
         private Button btnTabPerf;
-        private CheckBox chkMasterSwitch;
+        private ModernToggleSwitch chkMasterSwitch;
 
         private Panel panelOverlayTab;
         private Panel panelSystemTab;
@@ -462,9 +462,9 @@ namespace LiteOverlay
         {
             DoubleBuffered = true;
             Text = "LiteOverlay System Monitor & Gaming HUD";
-            Size = new Size(1000, 680);
+            Size = new Size(1080, 700);
             StartPosition = FormStartPosition.CenterScreen;
-            BackColor = Color.FromArgb(12, 14, 18);
+            BackColor = Color.FromArgb(6, 8, 14);
             ForeColor = Color.White;
             Icon = SystemIcons.Application;
 
@@ -488,53 +488,88 @@ namespace LiteOverlay
 
         private void BuildDashboardUI()
         {
-            contentPanel = new Panel { Dock = DockStyle.Fill, BackColor = Color.FromArgb(12, 14, 18), Padding = new Padding(20) };
+            contentPanel = new Panel { Dock = DockStyle.Fill, BackColor = Color.FromArgb(6, 8, 14), Padding = new Padding(20) };
             Controls.Add(contentPanel);
 
-            Panel navPanel = new Panel { Dock = DockStyle.Top, Height = 45, BackColor = Color.FromArgb(20, 24, 32) };
+            Panel navPanel = new Panel { Dock = DockStyle.Top, Height = 52, BackColor = Color.FromArgb(9, 12, 19) };
+            navPanel.Paint += (s, e) =>
+            {
+                using (Pen pen = new Pen(Color.FromArgb(22, 28, 43), 1))
+                {
+                    e.Graphics.DrawRectangle(pen, 0, 0, navPanel.Width - 1, navPanel.Height - 1);
+                }
+            };
             Controls.Add(navPanel);
 
-            btnTabOverlay = CreateNavTab("OVERLAY SETTINGS", 10);
-            btnTabSystem = CreateNavTab("SYSTEM MONITOR", 200);
-            btnTabPerf = CreateNavTab("PERFORMANCE & APP", 390);
+            btnTabOverlay = CreateNavTab("⚡ OVERLAY SETTINGS", 12);
+            btnTabSystem = CreateNavTab("📊 SYSTEM MONITOR", 210);
+            btnTabPerf = CreateNavTab("⚙ PERFORMANCE & APP", 408);
 
             navPanel.Controls.Add(btnTabOverlay);
             navPanel.Controls.Add(btnTabSystem);
             navPanel.Controls.Add(btnTabPerf);
 
-            Panel headerPanel = new Panel { Dock = DockStyle.Top, Height = 75, BackColor = Color.FromArgb(16, 19, 26) };
+            Panel headerPanel = new Panel { Dock = DockStyle.Top, Height = 75, BackColor = Color.FromArgb(9, 12, 19) };
+            headerPanel.Paint += (s, e) =>
+            {
+                using (Pen pen = new Pen(Color.FromArgb(22, 28, 43), 1))
+                {
+                    e.Graphics.DrawLine(pen, 0, headerPanel.Height - 1, headerPanel.Width, headerPanel.Height - 1);
+                }
+            };
             Controls.Add(headerPanel);
+
+            Label lblBadge = new Label
+            {
+                Text = "ULTRA LOW RAM",
+                Font = new Font("Segoe UI", 7.5f, FontStyle.Bold),
+                ForeColor = Color.FromArgb(0, 230, 118),
+                BackColor = Color.FromArgb(20, 0, 230, 118),
+                Padding = new Padding(8, 4, 8, 4),
+                Location = new Point(20, 24),
+                AutoSize = true
+            };
+            headerPanel.Controls.Add(lblBadge);
 
             Label lblTitle = new Label
             {
-                Text = "LiteOverlay",
+                Text = "⚡ LiteOverlay",
                 Font = new Font("Segoe UI", 18, FontStyle.Bold),
                 ForeColor = Color.White,
-                Location = new Point(20, 18),
+                Location = new Point(155, 20),
                 AutoSize = true
             };
             headerPanel.Controls.Add(lblTitle);
 
-            Label lblSub = new Label
+            Panel masterCapsule = new Panel
             {
-                Text = "ULTRA LOW RAM",
-                Font = new Font("Segoe UI", 8, FontStyle.Bold),
-                ForeColor = Color.FromArgb(0, 230, 118),
-                BackColor = Color.FromArgb(30, 0, 230, 118),
-                Padding = new Padding(4, 2, 4, 2),
-                Location = new Point(200, 25),
-                AutoSize = true
+                Location = new Point(800, 20),
+                Size = new Size(240, 36),
+                BackColor = Color.FromArgb(15, 20, 34)
             };
-            headerPanel.Controls.Add(lblSub);
+            masterCapsule.Paint += (s, e) =>
+            {
+                using (Pen pen = new Pen(Color.FromArgb(27, 38, 59), 1))
+                {
+                    e.Graphics.DrawRectangle(pen, 0, 0, masterCapsule.Width - 1, masterCapsule.Height - 1);
+                }
+            };
 
-            chkMasterSwitch = new CheckBox
+            Label lblMaster = new Label
             {
                 Text = "OVERLAY DISPLAY",
-                Font = new Font("Segoe UI", 10, FontStyle.Bold),
-                ForeColor = Color.FromArgb(0, 230, 118),
+                Font = new Font("Segoe UI", 8.5f, FontStyle.Bold),
+                ForeColor = Color.FromArgb(136, 152, 168),
+                Location = new Point(12, 10),
+                AutoSize = true
+            };
+            masterCapsule.Controls.Add(lblMaster);
+
+            chkMasterSwitch = new ModernToggleSwitch
+            {
                 Checked = true,
-                Location = new Point(780, 24),
-                AutoSize = true,
+                Location = new Point(180, 6),
+                Size = new Size(48, 24),
                 Cursor = Cursors.Hand
             };
             chkMasterSwitch.CheckedChanged += (s, e) =>
@@ -542,7 +577,9 @@ namespace LiteOverlay
                 AppState.OverlayVisible = chkMasterSwitch.Checked;
                 hudWindow.SetOverlayVisible(AppState.OverlayVisible);
             };
-            headerPanel.Controls.Add(chkMasterSwitch);
+            masterCapsule.Controls.Add(chkMasterSwitch);
+
+            headerPanel.Controls.Add(masterCapsule);
 
             BuildOverlayTab();
             BuildSystemTab();
@@ -556,11 +593,11 @@ namespace LiteOverlay
             Button btn = new Button
             {
                 Text = text,
-                Location = new Point(x, 4),
-                Size = new Size(180, 38),
+                Location = new Point(x, 6),
+                Size = new Size(190, 40),
                 FlatStyle = FlatStyle.Flat,
                 Font = new Font("Segoe UI", 9.5f, FontStyle.Bold),
-                ForeColor = Color.FromArgb(140, 150, 170),
+                ForeColor = Color.FromArgb(136, 152, 168),
                 BackColor = Color.Transparent,
                 Cursor = Cursors.Hand
             };
@@ -580,12 +617,16 @@ namespace LiteOverlay
             panelSystemTab.Visible = false;
             panelPerfTab.Visible = false;
 
-            btnTabOverlay.ForeColor = Color.FromArgb(140, 150, 170);
-            btnTabSystem.ForeColor = Color.FromArgb(140, 150, 170);
-            btnTabPerf.ForeColor = Color.FromArgb(140, 150, 170);
+            btnTabOverlay.ForeColor = Color.FromArgb(136, 152, 168);
+            btnTabOverlay.BackColor = Color.Transparent;
+            btnTabSystem.ForeColor = Color.FromArgb(136, 152, 168);
+            btnTabSystem.BackColor = Color.Transparent;
+            btnTabPerf.ForeColor = Color.FromArgb(136, 152, 168);
+            btnTabPerf.BackColor = Color.Transparent;
 
             activePane.Visible = true;
             activeBtn.ForeColor = Color.FromArgb(0, 230, 118);
+            activeBtn.BackColor = Color.FromArgb(20, 0, 230, 118);
         }
 
         private void BuildOverlayTab()
@@ -593,52 +634,140 @@ namespace LiteOverlay
             panelOverlayTab = new Panel { Dock = DockStyle.Fill, AutoScroll = true };
             contentPanel.Controls.Add(panelOverlayTab);
 
-            GroupBox boxStats = new GroupBox
+            // Left Card: Active Overlay Stats
+            Panel boxStats = new Panel
             {
-                Text = "Active Overlay Stats",
-                Font = new Font("Segoe UI", 10, FontStyle.Bold),
-                ForeColor = Color.White,
                 Location = new Point(10, 10),
-                Size = new Size(440, 480),
-                BackColor = Color.FromArgb(20, 24, 32)
+                Size = new Size(475, 520),
+                BackColor = Color.FromArgb(9, 12, 19)
+            };
+            boxStats.Paint += (s, e) =>
+            {
+                using (Pen pen = new Pen(Color.FromArgb(22, 28, 43), 1))
+                {
+                    e.Graphics.DrawRectangle(pen, 0, 0, boxStats.Width - 1, boxStats.Height - 1);
+                }
             };
             panelOverlayTab.Controls.Add(boxStats);
 
-            int y = 35;
-            boxStats.Controls.Add(CreateStatCheckBox("Live FPS", AppState.ShowFps, 20, y, v => AppState.ShowFps = v)); y += 42;
-            boxStats.Controls.Add(CreateStatCheckBox("Ping (Latency)", AppState.ShowPing, 20, y, v => AppState.ShowPing = v)); y += 42;
-            boxStats.Controls.Add(CreateStatCheckBox("RAM Usage", AppState.ShowRam, 20, y, v => AppState.ShowRam = v)); y += 42;
-            boxStats.Controls.Add(CreateStatCheckBox("CPU Usage (%)", AppState.ShowCpu, 20, y, v => AppState.ShowCpu = v)); y += 42;
-            boxStats.Controls.Add(CreateStatCheckBox("GPU Usage (%)", AppState.ShowGpu, 20, y, v => AppState.ShowGpu = v)); y += 42;
-            boxStats.Controls.Add(CreateStatCheckBox("Temperature (°C)", AppState.ShowTemp, 20, y, v => AppState.ShowTemp = v)); y += 42;
-            boxStats.Controls.Add(CreateStatCheckBox("Battery %", AppState.ShowBattery, 20, y, v => AppState.ShowBattery = v)); y += 42;
-            boxStats.Controls.Add(CreateStatCheckBox("Network Speed", AppState.ShowNetwork, 20, y, v => AppState.ShowNetwork = v)); y += 42;
-            boxStats.Controls.Add(CreateStatCheckBox("Disk Storage", AppState.ShowDisk, 20, y, v => AppState.ShowDisk = v));
-
-            GroupBox boxApp = new GroupBox
+            Label lblStatsTitle = new Label
             {
-                Text = "Overlay Appearance & Theme",
-                Font = new Font("Segoe UI", 10, FontStyle.Bold),
+                Text = "📄  Active Overlay Stats",
+                Font = new Font("Segoe UI", 11.5f, FontStyle.Bold),
                 ForeColor = Color.White,
-                Location = new Point(470, 10),
-                Size = new Size(470, 480),
-                BackColor = Color.FromArgb(20, 24, 32)
+                Location = new Point(18, 16),
+                AutoSize = true
+            };
+            boxStats.Controls.Add(lblStatsTitle);
+
+            Label lblStatsSub = new Label
+            {
+                Text = "Select which metrics appear inside your floating gaming HUD.",
+                Font = new Font("Segoe UI", 8.5f, FontStyle.Regular),
+                ForeColor = Color.FromArgb(136, 152, 168),
+                Location = new Point(18, 42),
+                AutoSize = true
+            };
+            boxStats.Controls.Add(lblStatsSub);
+
+            // 3-Column Grid of Custom Chips
+            int colWidth = 145;
+            int rowHeight = 52;
+            int startX = 15;
+            int startY = 75;
+
+            // Row 0
+            boxStats.Controls.Add(CreateStatChip("Live FPS", AppState.ShowFps, startX, startY, v => AppState.ShowFps = v));
+            boxStats.Controls.Add(CreateStatChip("Ping (Latency)", AppState.ShowPing, startX + colWidth, startY, v => AppState.ShowPing = v));
+            boxStats.Controls.Add(CreateStatChip("RAM Usage", AppState.ShowRam, startX + (colWidth * 2), startY, v => AppState.ShowRam = v));
+
+            // Row 1
+            boxStats.Controls.Add(CreateStatChip("CPU Usage (%)", AppState.ShowCpu, startX, startY + rowHeight, v => AppState.ShowCpu = v));
+            boxStats.Controls.Add(CreateStatChip("GPU Usage (%)", AppState.ShowGpu, startX + colWidth, startY + rowHeight, v => AppState.ShowGpu = v));
+            boxStats.Controls.Add(CreateStatChip("Temp (°C)", AppState.ShowTemp, startX + (colWidth * 2), startY + rowHeight, v => AppState.ShowTemp = v));
+
+            // Row 2
+            boxStats.Controls.Add(CreateStatChip("Battery %", AppState.ShowBattery, startX, startY + (rowHeight * 2), v => AppState.ShowBattery = v));
+            boxStats.Controls.Add(CreateStatChip("Network Speed", AppState.ShowNetwork, startX + colWidth, startY + (rowHeight * 2), v => AppState.ShowNetwork = v));
+            boxStats.Controls.Add(CreateStatChip("Disk Storage", AppState.ShowDisk, startX + (colWidth * 2), startY + (rowHeight * 2), v => AppState.ShowDisk = v));
+
+            // Right Card: Overlay Appearance & Theme
+            Panel boxApp = new Panel
+            {
+                Location = new Point(500, 10),
+                Size = new Size(475, 520),
+                BackColor = Color.FromArgb(9, 12, 19)
+            };
+            boxApp.Paint += (s, e) =>
+            {
+                using (Pen pen = new Pen(Color.FromArgb(22, 28, 43), 1))
+                {
+                    e.Graphics.DrawRectangle(pen, 0, 0, boxApp.Width - 1, boxApp.Height - 1);
+                }
             };
             panelOverlayTab.Controls.Add(boxApp);
 
-            Label lblLayout = new Label { Text = "HUD Layout Style:", Location = new Point(20, 35), AutoSize = true, Font = new Font("Segoe UI", 9) };
+            Label lblAppTitle = new Label
+            {
+                Text = "🎛  Overlay Appearance & Theme",
+                Font = new Font("Segoe UI", 11.5f, FontStyle.Bold),
+                ForeColor = Color.White,
+                Location = new Point(18, 16),
+                AutoSize = true
+            };
+            boxApp.Controls.Add(lblAppTitle);
+
+            Label lblColorTitle = new Label { Text = "Overlay Accent Theme:", Location = new Point(18, 50), AutoSize = true, Font = new Font("Segoe UI", 9f), ForeColor = Color.FromArgb(136, 152, 168) };
+            boxApp.Controls.Add(lblColorTitle);
+
+            // Color Palette Buttons
+            Color[] themeColors = new Color[] {
+                Color.FromArgb(0, 230, 118),
+                Color.FromArgb(0, 176, 255),
+                Color.FromArgb(255, 145, 0),
+                Color.FromArgb(255, 82, 82),
+                Color.White
+            };
+
+            int btnX = 18;
+            foreach (Color col in themeColors)
+            {
+                Button btnCol = new Button
+                {
+                    Location = new Point(btnX, 72),
+                    Size = new Size(34, 34),
+                    FlatStyle = FlatStyle.Flat,
+                    BackColor = col,
+                    Cursor = Cursors.Hand
+                };
+                btnCol.FlatAppearance.BorderSize = col == AppState.AccentColor ? 3 : 0;
+                btnCol.FlatAppearance.BorderColor = Color.White;
+
+                btnCol.Click += (s, e) =>
+                {
+                    AppState.AccentColor = col;
+                    hudWindow.RefreshHud();
+                    boxApp.Invalidate();
+                };
+                boxApp.Controls.Add(btnCol);
+                btnX += 42;
+            }
+
+            Label lblLayout = new Label { Text = "HUD Layout Style:", Location = new Point(18, 118), AutoSize = true, Font = new Font("Segoe UI", 9f), ForeColor = Color.FromArgb(136, 152, 168) };
             boxApp.Controls.Add(lblLayout);
 
             ComboBox cbLayout = new ComboBox
             {
-                Location = new Point(20, 58),
-                Width = 420,
+                Location = new Point(18, 140),
+                Width = 430,
+                Height = 36,
                 DropDownStyle = ComboBoxStyle.DropDownList,
-                BackColor = Color.FromArgb(12, 14, 18),
-                ForeColor = Color.White
+                BackColor = Color.FromArgb(15, 20, 34),
+                ForeColor = Color.White,
+                Font = new Font("Segoe UI", 9.5f)
             };
             cbLayout.Items.AddRange(new object[] { "Vertical Stack", "Horizontal Compact Bar" });
-            cbLayout.SelectedIndex = 0;
+            cbLayout.SelectedIndex = AppState.LayoutStyle == "Horizontal Compact Bar" ? 1 : 0;
             cbLayout.SelectedIndexChanged += (s, e) =>
             {
                 AppState.LayoutStyle = cbLayout.SelectedItem.ToString();
@@ -646,10 +775,10 @@ namespace LiteOverlay
             };
             boxApp.Controls.Add(cbLayout);
 
-            Label lblOp = new Label { Text = "Background Opacity: " + AppState.OpacityPct + "%", Location = new Point(20, 100), AutoSize = true, Font = new Font("Segoe UI", 9) };
+            Label lblOp = new Label { Text = "Background Opacity: " + AppState.OpacityPct + "%", Location = new Point(18, 185), AutoSize = true, Font = new Font("Segoe UI", 9f), ForeColor = Color.FromArgb(136, 152, 168) };
             boxApp.Controls.Add(lblOp);
 
-            TrackBar tbOp = new TrackBar { Location = new Point(20, 122), Width = 420, Minimum = 0, Maximum = 100, Value = AppState.OpacityPct, TickStyle = TickStyle.None };
+            TrackBar tbOp = new TrackBar { Location = new Point(18, 208), Width = 430, Height = 28, AutoSize = false, Minimum = 0, Maximum = 100, Value = AppState.OpacityPct, TickStyle = TickStyle.None };
             tbOp.ValueChanged += (s, e) =>
             {
                 AppState.OpacityPct = tbOp.Value;
@@ -658,10 +787,10 @@ namespace LiteOverlay
             };
             boxApp.Controls.Add(tbOp);
 
-            Label lblFont = new Label { Text = "Font Size: " + AppState.FontSize + "px", Location = new Point(20, 165), AutoSize = true, Font = new Font("Segoe UI", 9) };
+            Label lblFont = new Label { Text = "Font Size: " + AppState.FontSize + "px", Location = new Point(18, 250), AutoSize = true, Font = new Font("Segoe UI", 9f), ForeColor = Color.FromArgb(136, 152, 168) };
             boxApp.Controls.Add(lblFont);
 
-            TrackBar tbFont = new TrackBar { Location = new Point(20, 187), Width = 420, Minimum = 10, Maximum = 28, Value = AppState.FontSize, TickStyle = TickStyle.None };
+            TrackBar tbFont = new TrackBar { Location = new Point(18, 272), Width = 430, Height = 28, AutoSize = false, Minimum = 10, Maximum = 28, Value = AppState.FontSize, TickStyle = TickStyle.None };
             tbFont.ValueChanged += (s, e) =>
             {
                 AppState.FontSize = tbFont.Value;
@@ -670,10 +799,10 @@ namespace LiteOverlay
             };
             boxApp.Controls.Add(tbFont);
 
-            Label lblRad = new Label { Text = "Corner Rounding: " + AppState.BorderRadius + "px", Location = new Point(20, 230), AutoSize = true, Font = new Font("Segoe UI", 9) };
+            Label lblRad = new Label { Text = "Corner Rounding: " + AppState.BorderRadius + "px", Location = new Point(18, 314), AutoSize = true, Font = new Font("Segoe UI", 9f), ForeColor = Color.FromArgb(136, 152, 168) };
             boxApp.Controls.Add(lblRad);
 
-            TrackBar tbRad = new TrackBar { Location = new Point(20, 252), Width = 420, Minimum = 0, Maximum = 20, Value = AppState.BorderRadius, TickStyle = TickStyle.None };
+            TrackBar tbRad = new TrackBar { Location = new Point(18, 336), Width = 430, Height = 28, AutoSize = false, Minimum = 0, Maximum = 20, Value = AppState.BorderRadius, TickStyle = TickStyle.None };
             tbRad.ValueChanged += (s, e) =>
             {
                 AppState.BorderRadius = tbRad.Value;
@@ -682,18 +811,17 @@ namespace LiteOverlay
             };
             boxApp.Controls.Add(tbRad);
 
-            int cy = 300;
+            int cy = 390;
 
-            CheckBox chkBorder = new CheckBox { Text = "Overlay Border Line", Checked = AppState.ShowBorder, Location = new Point(20, cy), AutoSize = true, Font = new Font("Segoe UI", 9.5f) };
+            CheckBox chkBorder = new CheckBox { Text = "Overlay Border Line", Checked = AppState.ShowBorder, Location = new Point(18, cy), AutoSize = true, Font = new Font("Segoe UI", 9f), ForeColor = Color.White };
             chkBorder.CheckedChanged += (s, e) =>
             {
                 AppState.ShowBorder = chkBorder.Checked;
                 hudWindow.RefreshHud();
             };
             boxApp.Controls.Add(chkBorder);
-            cy += 32;
 
-            CheckBox chkTitles = new CheckBox { Text = "Show Stat Titles (e.g. FPS 144)", Checked = AppState.ShowLabels, Location = new Point(20, cy), AutoSize = true, Font = new Font("Segoe UI", 9.5f) };
+            CheckBox chkTitles = new CheckBox { Text = "Show Stat Titles", Checked = AppState.ShowLabels, Location = new Point(210, cy), AutoSize = true, Font = new Font("Segoe UI", 9f), ForeColor = Color.White };
             chkTitles.CheckedChanged += (s, e) =>
             {
                 AppState.ShowLabels = chkTitles.Checked;
@@ -702,16 +830,15 @@ namespace LiteOverlay
             boxApp.Controls.Add(chkTitles);
             cy += 32;
 
-            CheckBox chkGlow = new CheckBox { Text = "Border Accent Glow", Checked = AppState.GlowEffect, Location = new Point(20, cy), AutoSize = true, Font = new Font("Segoe UI", 9.5f) };
+            CheckBox chkGlow = new CheckBox { Text = "Border Accent Glow", Checked = AppState.GlowEffect, Location = new Point(18, cy), AutoSize = true, Font = new Font("Segoe UI", 9f), ForeColor = Color.White };
             chkGlow.CheckedChanged += (s, e) =>
             {
                 AppState.GlowEffect = chkGlow.Checked;
                 hudWindow.RefreshHud();
             };
             boxApp.Controls.Add(chkGlow);
-            cy += 32;
 
-            CheckBox chkLock = new CheckBox { Text = "Lock Overlay Drag Position", Checked = AppState.LockPosition, Location = new Point(20, cy), AutoSize = true, Font = new Font("Segoe UI", 9.5f) };
+            CheckBox chkLock = new CheckBox { Text = "Lock Overlay Position", Checked = AppState.LockPosition, Location = new Point(210, cy), AutoSize = true, Font = new Font("Segoe UI", 9f), ForeColor = Color.White };
             chkLock.CheckedChanged += (s, e) =>
             {
                 AppState.LockPosition = chkLock.Checked;
@@ -720,24 +847,67 @@ namespace LiteOverlay
             boxApp.Controls.Add(chkLock);
         }
 
-        private CheckBox CreateStatCheckBox(string label, bool initial, int x, int y, Action<bool> onChange)
+        private Panel CreateStatChip(string label, bool initial, int x, int y, Action<bool> onChange)
         {
-            CheckBox cb = new CheckBox
+            Panel p = new Panel
             {
-                Text = label,
-                Checked = initial,
                 Location = new Point(x, y),
-                AutoSize = true,
-                Font = new Font("Segoe UI", 10, FontStyle.Regular),
-                ForeColor = Color.White,
+                Size = new Size(138, 44),
+                BackColor = Color.FromArgb(15, 20, 34),
                 Cursor = Cursors.Hand
             };
-            cb.CheckedChanged += (s, e) =>
+
+            bool isChecked = initial;
+
+            p.Paint += (s, e) =>
             {
-                onChange(cb.Checked);
+                Graphics g = e.Graphics;
+                g.SmoothingMode = SmoothingMode.AntiAlias;
+
+                using (Pen pen = new Pen(isChecked ? Color.FromArgb(0, 230, 118) : Color.FromArgb(27, 38, 59), 1))
+                {
+                    g.DrawRectangle(pen, 0, 0, p.Width - 1, p.Height - 1);
+                }
+
+                // Draw Custom Check Square
+                Rectangle checkRect = new Rectangle(10, 13, 18, 18);
+                if (isChecked)
+                {
+                    using (SolidBrush bgBrush = new SolidBrush(Color.FromArgb(0, 230, 118)))
+                    {
+                        g.FillRectangle(bgBrush, checkRect);
+                    }
+                    using (Font font = new Font("Segoe UI", 8.5f, FontStyle.Bold))
+                    using (SolidBrush textBrush = new SolidBrush(Color.FromArgb(6, 8, 14)))
+                    {
+                        g.DrawString("✓", font, textBrush, 12, 14);
+                    }
+                }
+                else
+                {
+                    using (Pen outlinePen = new Pen(Color.FromArgb(60, 75, 100), 1.5f))
+                    {
+                        g.DrawRectangle(outlinePen, checkRect);
+                    }
+                }
+
+                // Draw Text
+                using (Font font = new Font("Segoe UI", 8.8f, FontStyle.Bold))
+                using (SolidBrush textBrush = new SolidBrush(isChecked ? Color.White : Color.FromArgb(136, 152, 168)))
+                {
+                    g.DrawString(label, font, textBrush, 33, 13);
+                }
+            };
+
+            p.Click += (s, e) =>
+            {
+                isChecked = !isChecked;
+                onChange(isChecked);
+                p.Invalidate();
                 hudWindow.RefreshHud();
             };
-            return cb;
+
+            return p;
         }
 
         private void BuildSystemTab()
@@ -750,7 +920,7 @@ namespace LiteOverlay
                 Dock = DockStyle.Fill,
                 AutoScroll = true,
                 Padding = new Padding(10),
-                BackColor = Color.FromArgb(12, 14, 18)
+                BackColor = Color.FromArgb(6, 8, 14)
             };
             panelSystemTab.Controls.Add(gridSystemCards);
 
@@ -787,17 +957,29 @@ namespace LiteOverlay
         {
             Panel card = new Panel
             {
-                Size = new Size(280, 110),
-                Margin = new Padding(8),
-                BackColor = Color.FromArgb(20, 24, 32)
+                Size = new Size(290, 120),
+                Margin = new Padding(10),
+                BackColor = Color.FromArgb(15, 20, 34)
             };
 
-            card.Controls.Add(new Label { Text = title, Location = new Point(14, 12), AutoSize = true, Font = new Font("Segoe UI", 9.5f, FontStyle.Bold), ForeColor = Color.FromArgb(140, 150, 170) });
+            card.Paint += (s, e) =>
+            {
+                using (Pen pen = new Pen(Color.FromArgb(0, 230, 118), 2))
+                {
+                    e.Graphics.DrawLine(pen, 0, 0, card.Width, 0);
+                }
+                using (Pen borderPen = new Pen(Color.FromArgb(27, 38, 59), 1))
+                {
+                    e.Graphics.DrawRectangle(borderPen, 0, 0, card.Width - 1, card.Height - 1);
+                }
+            };
+
+            card.Controls.Add(new Label { Text = title, Location = new Point(16, 14), AutoSize = true, Font = new Font("Segoe UI", 9.5f, FontStyle.Bold), ForeColor = Color.FromArgb(148, 163, 184) });
             
-            valLabel = new Label { Text = val, Location = new Point(14, 38), AutoSize = true, Font = new Font("Consolas", 18, FontStyle.Bold), ForeColor = Color.FromArgb(0, 230, 118) };
+            valLabel = new Label { Text = val, Location = new Point(16, 42), AutoSize = true, Font = new Font("Consolas", 20, FontStyle.Bold), ForeColor = Color.FromArgb(0, 230, 118) };
             card.Controls.Add(valLabel);
 
-            subLabel = new Label { Text = sub, Location = new Point(14, 78), AutoSize = true, Font = new Font("Segoe UI", 8.5f), ForeColor = Color.FromArgb(100, 110, 130) };
+            subLabel = new Label { Text = sub, Location = new Point(16, 86), AutoSize = true, Font = new Font("Segoe UI", 8.5f), ForeColor = Color.FromArgb(100, 116, 139) };
             card.Controls.Add(subLabel);
 
             return card;
@@ -808,27 +990,43 @@ namespace LiteOverlay
             panelPerfTab = new Panel { Dock = DockStyle.Fill, AutoScroll = true };
             contentPanel.Controls.Add(panelPerfTab);
 
-            GroupBox boxPerf = new GroupBox
+            Panel boxPerf = new Panel
             {
-                Text = "Low-End Laptop Performance Settings",
-                Font = new Font("Segoe UI", 10, FontStyle.Bold),
-                ForeColor = Color.White,
                 Location = new Point(10, 10),
-                Size = new Size(930, 480),
-                BackColor = Color.FromArgb(20, 24, 32)
+                Size = new Size(950, 520),
+                BackColor = Color.FromArgb(9, 12, 19)
+            };
+            boxPerf.Paint += (s, e) =>
+            {
+                using (Pen pen = new Pen(Color.FromArgb(22, 28, 43), 1))
+                {
+                    e.Graphics.DrawRectangle(pen, 0, 0, boxPerf.Width - 1, boxPerf.Height - 1);
+                }
             };
             panelPerfTab.Controls.Add(boxPerf);
 
-            Label lblInterval = new Label { Text = "Data Refresh Interval:", Location = new Point(20, 40), AutoSize = true, Font = new Font("Segoe UI", 9.5f) };
+            Label lblPerfTitle = new Label
+            {
+                Text = "🚀  Low-End Laptop Performance Settings",
+                Font = new Font("Segoe UI", 11.5f, FontStyle.Bold),
+                ForeColor = Color.White,
+                Location = new Point(20, 20),
+                AutoSize = true
+            };
+            boxPerf.Controls.Add(lblPerfTitle);
+
+            Label lblInterval = new Label { Text = "Data Refresh Interval:", Location = new Point(20, 60), AutoSize = true, Font = new Font("Segoe UI", 9.5f), ForeColor = Color.FromArgb(136, 152, 168) };
             boxPerf.Controls.Add(lblInterval);
 
             ComboBox cbInterval = new ComboBox
             {
-                Location = new Point(20, 68),
-                Width = 400,
+                Location = new Point(20, 88),
+                Width = 420,
+                Height = 36,
                 DropDownStyle = ComboBoxStyle.DropDownList,
-                BackColor = Color.FromArgb(12, 14, 18),
-                ForeColor = Color.White
+                BackColor = Color.FromArgb(15, 20, 34),
+                ForeColor = Color.White,
+                Font = new Font("Segoe UI", 9.5f)
             };
             cbInterval.Items.AddRange(new object[] { "250 ms (Ultra Fast)", "500 ms (Recommended)", "1000 ms (Low CPU)", "2000 ms (Extreme Low CPU)" });
             cbInterval.SelectedIndex = 1;
@@ -847,15 +1045,15 @@ namespace LiteOverlay
 
             Label lblInfo = new Label
             {
-                Text = "Pure Standalone C# Executable Engine\n\n" +
-                       "- Zero Browser Dependencies\n" +
-                       "- Always-On-Top Native Gaming HUD\n" +
-                       "- True transparent overlay (0% opacity)\n" +
-                       "- Separate HUD window stays above games",
-                Location = new Point(20, 140),
+                Text = "⚡ Pure Standalone C# Executable Engine\n\n" +
+                       "• Zero Browser Dependencies\n" +
+                       "• Always-On-Top Native Gaming HUD\n" +
+                       "• True Transparent Overlay (0% CPU overhead)\n" +
+                       "• Stays active above Fullscreen & Windowed Games",
+                Location = new Point(20, 160),
                 Size = new Size(880, 280),
                 Font = new Font("Segoe UI", 11, FontStyle.Regular),
-                ForeColor = Color.FromArgb(160, 170, 190)
+                ForeColor = Color.FromArgb(148, 163, 184)
             };
             boxPerf.Controls.Add(lblInfo);
         }
@@ -957,6 +1155,67 @@ namespace LiteOverlay
                     Interlocked.Exchange(ref sensorUpdateInProgress, 0);
                 }
             });
+        }
+    }
+
+    public class ModernToggleSwitch : Control
+    {
+        private bool isChecked = true;
+        public event EventHandler CheckedChanged;
+
+        public bool Checked
+        {
+            get { return isChecked; }
+            set
+            {
+                if (isChecked != value)
+                {
+                    isChecked = value;
+                    Invalidate();
+                    if (CheckedChanged != null) CheckedChanged(this, EventArgs.Empty);
+                }
+            }
+        }
+
+        public ModernToggleSwitch()
+        {
+            SetStyle(ControlStyles.UserPaint | ControlStyles.AllPaintingInWmPaint | ControlStyles.OptimizedDoubleBuffer, true);
+            Size = new Size(48, 24);
+            Cursor = Cursors.Hand;
+        }
+
+        protected override void OnClick(EventArgs e)
+        {
+            Checked = !Checked;
+            base.OnClick(e);
+        }
+
+        protected override void OnPaint(PaintEventArgs e)
+        {
+            Graphics g = e.Graphics;
+            g.SmoothingMode = SmoothingMode.AntiAlias;
+
+            using (GraphicsPath path = new GraphicsPath())
+            {
+                int d = Height - 1;
+                path.AddArc(0, 0, d, d, 90, 180);
+                path.AddArc(Width - d - 1, 0, d, d, 270, 180);
+                path.CloseFigure();
+
+                using (SolidBrush bgBrush = new SolidBrush(isChecked ? Color.FromArgb(0, 230, 118) : Color.FromArgb(30, 41, 59)))
+                {
+                    g.FillPath(bgBrush, path);
+                }
+            }
+
+            int knobSize = Height - 6;
+            int knobX = isChecked ? Width - knobSize - 3 : 3;
+            int knobY = 3;
+
+            using (SolidBrush knobBrush = new SolidBrush(isChecked ? Color.FromArgb(6, 8, 14) : Color.White))
+            {
+                g.FillEllipse(knobBrush, knobX, knobY, knobSize, knobSize);
+            }
         }
     }
 }
