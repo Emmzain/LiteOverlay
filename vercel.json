@@ -1,0 +1,33 @@
+{
+  "version": 2,
+  "name": "lite-overlay",
+  "cleanUrls": true,
+  "headers": [
+    {
+      "source": "/SetupLiteOverlay.exe",
+      "headers": [
+        {
+          "key": "Content-Type",
+          "value": "application/x-msdownload"
+        },
+        {
+          "key": "Content-Disposition",
+          "value": "attachment; filename=SetupLiteOverlay.exe"
+        }
+      ]
+    },
+    {
+      "source": "/LiteOverlay.exe",
+      "headers": [
+        {
+          "key": "Content-Type",
+          "value": "application/x-msdownload"
+        },
+        {
+          "key": "Content-Disposition",
+          "value": "attachment; filename=LiteOverlay.exe"
+        }
+      ]
+    }
+  ]
+}
