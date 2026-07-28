@@ -6,6 +6,7 @@
   "scripts": {
     "dev": "python -m http.server 8080",
     "build": "echo Web build ready",
+    "build:exe": "powershell -ExecutionPolicy Bypass -File build.ps1",
     "tauri": "tauri",
     "tauri:build": "tauri build"
   },

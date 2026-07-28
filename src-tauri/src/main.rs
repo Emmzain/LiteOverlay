@@ -2,6 +2,7 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
 #[derive(serde::Serialize)]
+#[serde(rename_all = "camelCase")]
 struct SystemStats {
     cpu_usage: f32,
     gpu_usage: f32,

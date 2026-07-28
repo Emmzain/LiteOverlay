@@ -16,6 +16,7 @@
       }
     }
     
+    fetchNativeStats();
     setInterval(fetchNativeStats, 1000);
   }
 })();
