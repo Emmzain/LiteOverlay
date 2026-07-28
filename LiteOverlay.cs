@@ -1,15 +1,12 @@
-// LiteOverlay.exe - Standalone Desktop Launcher & Overlay Server
-// Launches Microsoft Edge in --app mode (100% Chromium Dark Theme)
-// Fallback: Native WinForms Form with IE11 Edge Emulation.
+// LiteOverlay.exe - Pure Standalone Native Windows Application
+// Zero localhost servers, zero external browser processes, zero connection errors.
+// Loads self-contained HTML/CSS/JS directly inside native C# window with TopMost overlay.
 
 using System;
-using System.Diagnostics;
 using System.Drawing;
 using System.IO;
-using System.Net;
 using System.Reflection;
 using System.Text;
-using System.Threading;
 using System.Windows.Forms;
 using Microsoft.Win32;
 
@@ -17,84 +14,24 @@ namespace LiteOverlay
 {
     static class Program
     {
-        private static HttpListener listener;
-        private static string appDir;
-        private static int serverPort = 18990;
-
-        private static readonly string[] WEB_FILES = new string[] {
-            "index.html", "styles.css", "app.js", "tauri_bridge.js"
-        };
-
         [STAThread]
         static void Main()
         {
+            // Enable IE11 Standards Mode rendering in Registry
             EnableEdgeEmulation();
 
             Application.EnableVisualStyles();
             Application.SetCompatibleTextRenderingDefault(false);
 
-            appDir = AppDomain.CurrentDomain.BaseDirectory;
-
-            // Extract embedded web files
-            ExtractEmbeddedFiles();
-
-            // Start local HTTP server
-            if (!StartLocalServer())
-            {
-                serverPort = 19880;
-                if (!StartLocalServer())
-                {
-                    serverPort = 20100;
-                    StartLocalServer();
-                }
-            }
-
-            string url = "http://localhost:" + serverPort + "/";
-
-            // Find Edge or Chrome
-            string browserPath = FindBrowser();
-
-            if (browserPath != null)
-            {
-                // Launch in Chromium --app mode for 100% pixel-perfect dark UI
-                string tempDir = Path.Combine(Path.GetTempPath(), "LiteOverlay_ChromiumData");
-
-                ProcessStartInfo psi = new ProcessStartInfo();
-                psi.FileName = browserPath;
-                psi.Arguments = string.Format(
-                    "--app={0} --window-size=1150,750 --disable-extensions --user-data-dir=\"{1}\"",
-                    url, tempDir);
-                psi.UseShellExecute = false;
-
-                try
-                {
-                    Process proc = Process.Start(psi);
-                    if (proc != null)
-                    {
-                        // Keep server running until window closes
-                        proc.WaitForExit();
-                    }
-                }
-                catch
-                {
-                    // Fallback to WinForms Window
-                    Application.Run(new OverlayForm(url));
-                }
-            }
-            else
-            {
-                // Fallback to WinForms Window
-                Application.Run(new OverlayForm(url));
-            }
-
-            StopServer();
+            // Launch Native C# Window
+            Application.Run(new OverlayForm());
         }
 
         private static void EnableEdgeEmulation()
         {
             try
             {
-                string appName = Path.GetFileName(Process.GetCurrentProcess().MainModule.FileName);
+                string appName = Path.GetFileName(System.Diagnostics.Process.GetCurrentProcess().MainModule.FileName);
                 using (RegistryKey key = Registry.CurrentUser.CreateSubKey(@"Software\Microsoft\Internet Explorer\Main\FeatureControl\FEATURE_BROWSER_EMULATION"))
                 {
                     if (key != null)
@@ -105,174 +42,98 @@ namespace LiteOverlay
             }
             catch { }
         }
-
-        private static void ExtractEmbeddedFiles()
-        {
-            Assembly asm = Assembly.GetExecutingAssembly();
-
-            foreach (string file in WEB_FILES)
-            {
-                string destPath = Path.Combine(appDir, file);
-                Stream stream = asm.GetManifestResourceStream(file);
-                if (stream != null)
-                {
-                    try
-                    {
-                        using (FileStream fs = new FileStream(destPath, FileMode.Create, FileAccess.Write))
-                        {
-                            byte[] buffer = new byte[4096];
-                            int bytesRead;
-                            while ((bytesRead = stream.Read(buffer, 0, buffer.Length)) > 0)
-                            {
-                                fs.Write(buffer, 0, bytesRead);
-                            }
-                        }
-                        stream.Close();
-                    }
-                    catch { }
-                }
-            }
-        }
-
-        private static string FindBrowser()
-        {
-            string[] edgePaths = new string[] {
-                @"C:\Program Files (x86)\Microsoft\Edge\Application\msedge.exe",
-                @"C:\Program Files\Microsoft\Edge\Application\msedge.exe",
-                Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ProgramFilesX86),
-                    "Microsoft", "Edge", "Application", "msedge.exe"),
-                Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ProgramFiles),
-                    "Microsoft", "Edge", "Application", "msedge.exe")
-            };
-
-            foreach (string p in edgePaths)
-            {
-                if (File.Exists(p)) return p;
-            }
-
-            string[] chromePaths = new string[] {
-                Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ProgramFilesX86),
-                    "Google", "Chrome", "Application", "chrome.exe"),
-                Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ProgramFiles),
-                    "Google", "Chrome", "Application", "chrome.exe"),
-                Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
-                    "Google", "Chrome", "Application", "chrome.exe")
-            };
-
-            foreach (string p in chromePaths)
-            {
-                if (File.Exists(p)) return p;
-            }
-
-            return null;
-        }
-
-        private static bool StartLocalServer()
-        {
-            try
-            {
-                listener = new HttpListener();
-                listener.Prefixes.Add("http://localhost:" + serverPort + "/");
-                listener.Start();
-
-                ThreadPool.QueueUserWorkItem(delegate
-                {
-                    while (listener != null && listener.IsListening)
-                    {
-                        try
-                        {
-                            HttpListenerContext ctx = listener.GetContext();
-                            ThreadPool.QueueUserWorkItem(delegate { ProcessRequest(ctx); });
-                        }
-                        catch { }
-                    }
-                });
-
-                return true;
-            }
-            catch
-            {
-                return false;
-            }
-        }
-
-        private static void StopServer()
-        {
-            try
-            {
-                if (listener != null)
-                {
-                    listener.Stop();
-                    listener.Close();
-                    listener = null;
-                }
-            }
-            catch { }
-        }
-
-        private static void ProcessRequest(HttpListenerContext context)
-        {
-            try
-            {
-                string filename = context.Request.Url.AbsolutePath.TrimStart('/');
-                if (string.IsNullOrEmpty(filename)) filename = "index.html";
-
-                filename = filename.Replace("..", "");
-                string filePath = Path.Combine(appDir, filename);
-
-                if (File.Exists(filePath))
-                {
-                    byte[] data = File.ReadAllBytes(filePath);
-                    string ext = Path.GetExtension(filePath).ToLower();
-
-                    if (ext == ".html") context.Response.ContentType = "text/html; charset=utf-8";
-                    else if (ext == ".css") context.Response.ContentType = "text/css; charset=utf-8";
-                    else if (ext == ".js") context.Response.ContentType = "application/javascript; charset=utf-8";
-                    else if (ext == ".json") context.Response.ContentType = "application/json";
-                    else if (ext == ".png") context.Response.ContentType = "image/png";
-                    else if (ext == ".ico") context.Response.ContentType = "image/x-icon";
-                    else if (ext == ".svg") context.Response.ContentType = "image/svg+xml";
-                    else context.Response.ContentType = "application/octet-stream";
-
-                    context.Response.ContentLength64 = data.Length;
-                    context.Response.StatusCode = 200;
-                    context.Response.OutputStream.Write(data, 0, data.Length);
-                }
-                else
-                {
-                    byte[] msg = Encoding.UTF8.GetBytes("404 Not Found");
-                    context.Response.StatusCode = 404;
-                    context.Response.ContentLength64 = msg.Length;
-                    context.Response.OutputStream.Write(msg, 0, msg.Length);
-                }
-            }
-            catch { }
-            finally
-            {
-                try { context.Response.OutputStream.Close(); } catch { }
-            }
-        }
     }
 
     public class OverlayForm : Form
     {
         private WebBrowser browser;
 
-        public OverlayForm(string targetUrl)
+        public OverlayForm()
         {
             this.Text = "LiteOverlay System Monitor";
             this.Size = new Size(1150, 750);
             this.StartPosition = FormStartPosition.CenterScreen;
-            this.TopMost = true;
+            this.TopMost = true; // Always On Top Over Games
             this.BackColor = Color.FromArgb(12, 14, 18);
             this.Icon = SystemIcons.Application;
 
             browser = new WebBrowser();
             browser.Dock = DockStyle.Fill;
             browser.ScriptErrorsSuppressed = true;
-            browser.Url = new Uri(targetUrl);
+            browser.IsWebBrowserContextMenuEnabled = false;
 
             this.Controls.Add(browser);
+
+            LoadNativeDocument();
+        }
+
+        private void LoadNativeDocument()
+        {
+            try
+            {
+                Assembly asm = Assembly.GetExecutingAssembly();
+
+                string html = ReadResourceStream(asm, "index.html");
+                string css = ReadResourceStream(asm, "styles.css");
+                string jsApp = ReadResourceStream(asm, "app.js");
+                string jsTauri = ReadResourceStream(asm, "tauri_bridge.js");
+
+                // Inject CSS and JS directly into HTML document
+                StringBuilder sb = new StringBuilder();
+                sb.AppendLine("<!DOCTYPE html>");
+                sb.AppendLine("<html><head>");
+                sb.AppendLine("<meta http-equiv=\"X-UA-Compatible\" content=\"IE=edge\" />");
+                sb.AppendLine("<meta charset=\"UTF-8\">");
+                sb.AppendLine("<title>LiteOverlay</title>");
+                sb.AppendLine("<style>");
+                sb.AppendLine(css);
+                sb.AppendLine("</style>");
+                sb.AppendLine("</head><body class=\"theme-dark\">");
+
+                // Extract body content from index.html
+                int bodyStart = html.IndexOf("<body", StringComparison.OrdinalIgnoreCase);
+                if (bodyStart >= 0)
+                {
+                    int bodyContentStart = html.IndexOf('>', bodyStart) + 1;
+                    int bodyEnd = html.IndexOf("</body>", StringComparison.OrdinalIgnoreCase);
+                    if (bodyEnd > bodyContentStart)
+                    {
+                        sb.AppendLine(html.Substring(bodyContentStart, bodyEnd - bodyContentStart));
+                    }
+                    else
+                    {
+                        sb.AppendLine(html);
+                    }
+                }
+                else
+                {
+                    sb.AppendLine(html);
+                }
+
+                sb.AppendLine("<script>");
+                sb.AppendLine(jsTauri);
+                sb.AppendLine(jsApp);
+                sb.AppendLine("</script>");
+                sb.AppendLine("</body></html>");
+
+                browser.DocumentText = sb.ToString();
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show("Native Document Load Error: " + ex.Message, "LiteOverlay Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+        }
+
+        private string ReadResourceStream(Assembly asm, string resourceName)
+        {
+            using (Stream stream = asm.GetManifestResourceStream(resourceName))
+            {
+                if (stream == null) return string.Empty;
+                using (StreamReader reader = new StreamReader(stream, Encoding.UTF8))
+                {
+                    return reader.ReadToEnd();
+                }
+            }
         }
     }
 }
