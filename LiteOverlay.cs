@@ -720,7 +720,7 @@ namespace LiteOverlay
             Label lblColorTitle = new Label { Text = "Overlay Accent Theme:", Location = new Point(18, 50), AutoSize = true, Font = new Font("Segoe UI", 9f), ForeColor = Color.FromArgb(136, 152, 168) };
             boxApp.Controls.Add(lblColorTitle);
 
-            // Color Palette Buttons
+            // Polished Color Palette Swatches
             Color[] themeColors = new Color[] {
                 Color.FromArgb(0, 230, 118),
                 Color.FromArgb(0, 176, 255),
@@ -729,43 +729,99 @@ namespace LiteOverlay
                 Color.White
             };
 
-            int btnX = 18;
+            int swatchX = 18;
             foreach (Color col in themeColors)
             {
-                Button btnCol = new Button
+                Panel swatch = new Panel
                 {
-                    Location = new Point(btnX, 72),
-                    Size = new Size(34, 34),
-                    FlatStyle = FlatStyle.Flat,
-                    BackColor = col,
+                    Location = new Point(swatchX, 72),
+                    Size = new Size(36, 36),
+                    BackColor = Color.Transparent,
                     Cursor = Cursors.Hand
                 };
-                btnCol.FlatAppearance.BorderSize = col == AppState.AccentColor ? 3 : 0;
-                btnCol.FlatAppearance.BorderColor = Color.White;
 
-                btnCol.Click += (s, e) =>
+                bool isHovered = false;
+                swatch.MouseEnter += (s, e) => { isHovered = true; swatch.Invalidate(); };
+                swatch.MouseLeave += (s, e) => { isHovered = false; swatch.Invalidate(); };
+
+                swatch.Paint += (s, e) =>
+                {
+                    Graphics g = e.Graphics;
+                    g.SmoothingMode = SmoothingMode.AntiAlias;
+
+                    bool isSelected = (AppState.AccentColor.ToArgb() == col.ToArgb());
+
+                    Rectangle rect = new Rectangle(1, 1, swatch.Width - 3, swatch.Height - 3);
+                    using (GraphicsPath path = GetRoundedRectPath(rect, 8))
+                    {
+                        if (isSelected || isHovered)
+                        {
+                            using (Pen glowPen = new Pen(isSelected ? Color.White : Color.FromArgb(140, 255, 255, 255), isSelected ? 2.5f : 1.5f))
+                            {
+                                g.DrawPath(glowPen, path);
+                            }
+                        }
+
+                        Rectangle fillRect = isSelected ? new Rectangle(4, 4, swatch.Width - 9, swatch.Height - 9) : rect;
+                        using (GraphicsPath fillPath = GetRoundedRectPath(fillRect, isSelected ? 6 : 8))
+                        using (SolidBrush fillBrush = new SolidBrush(col))
+                        {
+                            g.FillPath(fillBrush, fillPath);
+                        }
+                    }
+                };
+
+                swatch.Click += (s, e) =>
                 {
                     AppState.AccentColor = col;
                     hudWindow.RefreshHud();
-                    boxApp.Invalidate();
+                    boxApp.Invalidate(true);
                 };
-                boxApp.Controls.Add(btnCol);
-                btnX += 42;
+
+                boxApp.Controls.Add(swatch);
+                swatchX += 46;
             }
 
             Label lblLayout = new Label { Text = "HUD Layout Style:", Location = new Point(18, 118), AutoSize = true, Font = new Font("Segoe UI", 9f), ForeColor = Color.FromArgb(136, 152, 168) };
             boxApp.Controls.Add(lblLayout);
 
+            // Modern Owner-Drawn Dropdown
             ComboBox cbLayout = new ComboBox
             {
                 Location = new Point(18, 140),
                 Width = 430,
                 Height = 36,
                 DropDownStyle = ComboBoxStyle.DropDownList,
+                DrawMode = DrawMode.OwnerDrawFixed,
+                ItemHeight = 28,
                 BackColor = Color.FromArgb(15, 20, 34),
                 ForeColor = Color.White,
-                Font = new Font("Segoe UI", 9.5f)
+                Font = new Font("Segoe UI", 9.5f, FontStyle.Bold)
             };
+
+            cbLayout.DrawItem += (s, e) =>
+            {
+                if (e.Index < 0) return;
+                Graphics g = e.Graphics;
+                g.SmoothingMode = SmoothingMode.AntiAlias;
+
+                bool isSelected = (e.State & DrawItemState.Selected) == DrawItemState.Selected;
+                Color bgColor = isSelected ? Color.FromArgb(0, 230, 118) : Color.FromArgb(15, 20, 34);
+                Color textColor = isSelected ? Color.FromArgb(6, 8, 14) : Color.White;
+
+                using (SolidBrush bgBrush = new SolidBrush(bgColor))
+                {
+                    g.FillRectangle(bgBrush, e.Bounds);
+                }
+
+                string itemText = cbLayout.Items[e.Index].ToString();
+                using (Font font = new Font("Segoe UI", 9.5f, FontStyle.Bold))
+                using (SolidBrush textBrush = new SolidBrush(textColor))
+                {
+                    g.DrawString(itemText, font, textBrush, e.Bounds.X + 10, e.Bounds.Y + 5);
+                }
+            };
+
             cbLayout.Items.AddRange(new object[] { "Vertical Stack", "Horizontal Compact Bar" });
             cbLayout.SelectedIndex = AppState.LayoutStyle == "Horizontal Compact Bar" ? 1 : 0;
             cbLayout.SelectedIndexChanged += (s, e) =>
@@ -983,6 +1039,23 @@ namespace LiteOverlay
             card.Controls.Add(subLabel);
 
             return card;
+        }
+
+        private static GraphicsPath GetRoundedRectPath(Rectangle rect, int radius)
+        {
+            GraphicsPath path = new GraphicsPath();
+            if (radius <= 0)
+            {
+                path.AddRectangle(rect);
+                return path;
+            }
+            int d = radius * 2;
+            path.AddArc(rect.X, rect.Y, d, d, 180, 90);
+            path.AddArc(rect.Right - d, rect.Y, d, d, 270, 90);
+            path.AddArc(rect.Right - d, rect.Bottom - d, d, d, 0, 90);
+            path.AddArc(rect.X, rect.Bottom - d, d, d, 90, 90);
+            path.CloseFigure();
+            return path;
         }
 
         private void BuildPerfTab()
