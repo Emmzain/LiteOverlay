@@ -1560,8 +1560,34 @@ namespace LiteOverlay
             }
         }
 
+        [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Auto)]
+        private class MEMORYSTATUSEX
+        {
+            public uint dwLength;
+            public uint dwMemoryLoad;
+            public ulong ullTotalPhys;
+            public ulong ullAvailPhys;
+            public ulong ullTotalPageFile;
+            public ulong ullAvailPageFile;
+            public ulong ullTotalVirtual;
+            public ulong ullAvailVirtual;
+            public ulong ullAvailExtendedVirtual;
+
+            public MEMORYSTATUSEX()
+            {
+                this.dwLength = (uint)Marshal.SizeOf(typeof(MEMORYSTATUSEX));
+            }
+        }
+
+        [DllImport("kernel32.dll", CharSet = CharSet.Auto, SetLastError = true)]
+        [return: MarshalAs(UnmanagedType.Bool)]
+        private static extern bool GlobalMemoryStatusEx([In, Out] MEMORYSTATUSEX lpBuffer);
+
         private PerformanceCounter cpuCounter;
-        private readonly Random rnd = new Random();
+        private PerformanceCounter gpuCounter;
+        private long prevBytesReceived = 0;
+        private long prevBytesSent = 0;
+        private DateTime prevNetTime = DateTime.UtcNow;
 
         private void InitSensors()
         {
@@ -1573,6 +1599,25 @@ namespace LiteOverlay
             catch
             {
                 cpuCounter = null;
+            }
+
+            try
+            {
+                PerformanceCounterCategory category = new PerformanceCounterCategory("GPU Engine");
+                string[] instances = category.GetInstanceNames();
+                foreach (string instance in instances)
+                {
+                    if (instance.EndsWith("engtype_3D", StringComparison.OrdinalIgnoreCase))
+                    {
+                        gpuCounter = new PerformanceCounter("GPU Engine", "Utilization Percentage", instance);
+                        gpuCounter.NextValue();
+                        break;
+                    }
+                }
+            }
+            catch
+            {
+                gpuCounter = null;
             }
 
             fpsTimer = new System.Windows.Forms.Timer { Interval = 16 };
@@ -1593,52 +1638,82 @@ namespace LiteOverlay
             {
                 try
                 {
+                    // 1. Live FPS Counter
                     double elapsedSeconds = Math.Max(0.001, fpsStopwatch.Elapsed.TotalSeconds);
                     AppState.Fps = (int)Math.Round(frameCount / elapsedSeconds);
                     frameCount = 0;
                     fpsStopwatch.Restart();
 
+                    // 2. Real Network Ping Latency (ICMP)
                     try
                     {
-                        Ping ping = new Ping();
-                        PingReply reply = ping.Send("1.1.1.1", 200);
-                        AppState.Ping = reply != null && reply.Status == IPStatus.Success
-                            ? (int)reply.RoundtripTime
-                            : rnd.Next(12, 28);
+                        using (Ping ping = new Ping())
+                        {
+                            PingReply reply = ping.Send("1.1.1.1", 300);
+                            if (reply != null && reply.Status == IPStatus.Success)
+                            {
+                                AppState.Ping = (int)reply.RoundtripTime;
+                            }
+                        }
                     }
-                    catch
-                    {
-                        AppState.Ping = rnd.Next(12, 28);
-                    }
+                    catch { }
 
+                    // 3. Real CPU Load (%)
                     if (cpuCounter != null)
                     {
                         try
                         {
-                            AppState.CpuPct = cpuCounter.NextValue();
+                            float val = cpuCounter.NextValue();
+                            AppState.CpuPct = Math.Min(100f, Math.Max(0f, val));
                         }
-                        catch
+                        catch { }
+                    }
+
+                    // 4. Real GPU Load (%)
+                    if (gpuCounter != null)
+                    {
+                        try
                         {
-                            AppState.CpuPct = rnd.Next(15, 35);
+                            float val = gpuCounter.NextValue();
+                            AppState.GpuPct = Math.Min(100f, Math.Max(0f, val));
                         }
+                        catch { }
                     }
                     else
                     {
-                        AppState.CpuPct = rnd.Next(15, 35);
+                        AppState.GpuPct = GetWmiGpuUsage();
                     }
 
-                    AppState.GpuPct = rnd.Next(20, 45);
+                    // 5. Real Physical RAM Usage & Total (GlobalMemoryStatusEx API)
+                    MEMORYSTATUSEX memStatus = new MEMORYSTATUSEX();
+                    if (GlobalMemoryStatusEx(memStatus))
+                    {
+                        double totalGb = memStatus.ullTotalPhys / (1024.0 * 1024.0 * 1024.0);
+                        double availGb = memStatus.ullAvailPhys / (1024.0 * 1024.0 * 1024.0);
+                        double usedGb = totalGb - availGb;
+                        double usedMb = (memStatus.ullTotalPhys - memStatus.ullAvailPhys) / (1024.0 * 1024.0);
 
-                    long ramUsedMb = GC.GetTotalMemory(false) / (1024 * 1024) + 12;
-                    AppState.RamText = ramUsedMb + " MB";
-                    AppState.RamTotalText = "8.0 GB";
+                        if (usedGb >= 1.0)
+                            AppState.RamText = string.Format("{0:F1} GB", usedGb);
+                        else
+                            AppState.RamText = string.Format("{0:F0} MB", usedMb);
 
+                        AppState.RamTotalText = string.Format("{0:F1} GB", totalGb);
+                    }
+
+                    // 6. Real Battery Status & Charge %
                     PowerStatus power = SystemInformation.PowerStatus;
-                    AppState.BatteryPct = (int)(power.BatteryLifePercent * 100);
-                    AppState.BatteryStatus = power.PowerLineStatus == PowerLineStatus.Online ? "Charging" : "Battery";
+                    AppState.BatteryPct = (int)Math.Round(power.BatteryLifePercent * 100);
+                    AppState.BatteryStatus = power.PowerLineStatus == PowerLineStatus.Online ? "⚡ Charging" : "Discharging";
 
-                    AppState.Temp = rnd.Next(52, 64);
-                    AppState.NetSpeed = rnd.Next(2, 12) + " Mbps";
+                    // 7. Real Thermal Temperature Sensors (°C)
+                    AppState.Temp = GetRealSystemTemp();
+
+                    // 8. Real Network Bandwidth Speed (Rx + Tx)
+                    UpdateNetworkSpeed();
+
+                    // 9. Real Disk Storage Space (C: Drive)
+                    UpdateDiskUsage();
 
                     if (!IsDisposed && IsHandleCreated)
                     {
@@ -1658,6 +1733,116 @@ namespace LiteOverlay
                 }
             });
         }
+
+        private static float GetWmiGpuUsage()
+        {
+            try
+            {
+                using (System.Management.ManagementObjectSearcher searcher = new System.Management.ManagementObjectSearcher(@"root\cimv2", "SELECT UtilizationPercentage FROM Win32_PerfFormattedData_GPUPerformanceCounters_GPUEngine WHERE Name LIKE '%engtype_3D%'"))
+                {
+                    float maxUtil = 0;
+                    foreach (System.Management.ManagementObject obj in searcher.Get())
+                    {
+                        float u = Convert.ToSingle(obj["UtilizationPercentage"]);
+                        if (u > maxUtil) maxUtil = u;
+                    }
+                    return maxUtil;
+                }
+            }
+            catch { return 0f; }
+        }
+
+        private int GetRealSystemTemp()
+        {
+            try
+            {
+                using (System.Management.ManagementObjectSearcher searcher = new System.Management.ManagementObjectSearcher(@"root\WMI", "SELECT CurrentTemperature FROM MSAcpi_ThermalZoneVariable"))
+                {
+                    foreach (System.Management.ManagementObject obj in searcher.Get())
+                    {
+                        uint tempDeciKelvin = Convert.ToUInt32(obj["CurrentTemperature"]);
+                        int tempCelsius = (int)Math.Round((tempDeciKelvin - 2732) / 10.0);
+                        if (tempCelsius > 0 && tempCelsius < 125) return tempCelsius;
+                    }
+                }
+            }
+            catch { }
+
+            try
+            {
+                using (System.Management.ManagementObjectSearcher searcher = new System.Management.ManagementObjectSearcher(@"root\cimv2", "SELECT CurrentTemperature FROM Win32_TemperatureProbe"))
+                {
+                    foreach (System.Management.ManagementObject obj in searcher.Get())
+                    {
+                        int temp = Convert.ToInt32(obj["CurrentTemperature"]);
+                        if (temp > 0 && temp < 125) return temp;
+                    }
+                }
+            }
+            catch { }
+
+            return 0;
+        }
+
+        private void UpdateNetworkSpeed()
+        {
+            try
+            {
+                long currentBytesRecv = 0;
+                long currentBytesSent = 0;
+
+                foreach (NetworkInterface ni in NetworkInterface.GetAllNetworkInterfaces())
+                {
+                    if (ni.OperationalStatus == OperationalStatus.Up &&
+                        ni.NetworkInterfaceType != NetworkInterfaceType.Loopback &&
+                        ni.NetworkInterfaceType != NetworkInterfaceType.Tunnel)
+                    {
+                        IPv4InterfaceStatistics stats = ni.GetIPv4Statistics();
+                        currentBytesRecv += stats.BytesReceived;
+                        currentBytesSent += stats.BytesSent;
+                    }
+                }
+
+                DateTime now = DateTime.UtcNow;
+                double elapsedSec = (now - prevNetTime).TotalSeconds;
+
+                if (prevBytesReceived > 0 && elapsedSec > 0.1)
+                {
+                    double bytesPerSec = ((currentBytesRecv - prevBytesReceived) + (currentBytesSent - prevBytesSent)) / elapsedSec;
+                    if (bytesPerSec >= 1024 * 1024)
+                    {
+                        AppState.NetSpeed = string.Format("{0:F1} MB/s", bytesPerSec / (1024.0 * 1024.0));
+                    }
+                    else
+                    {
+                        AppState.NetSpeed = string.Format("{0:F0} KB/s", Math.Max(0, bytesPerSec / 1024.0));
+                    }
+                }
+
+                prevBytesReceived = currentBytesRecv;
+                prevBytesSent = currentBytesSent;
+                prevNetTime = now;
+            }
+            catch { }
+        }
+
+        private void UpdateDiskUsage()
+        {
+            try
+            {
+                DriveInfo cDrive = new DriveInfo("C");
+                if (cDrive.IsReady)
+                {
+                    double totalGb = cDrive.TotalSize / (1024.0 * 1024.0 * 1024.0);
+                    double freeGb = cDrive.AvailableFreeSpace / (1024.0 * 1024.0 * 1024.0);
+                    double usedGb = totalGb - freeGb;
+
+                    AppState.DiskText = string.Format("{0:F0} GB / {1:F0} GB", usedGb, totalGb);
+                }
+            }
+            catch { }
+        }
+
     }
 
     public class ModernToggleSwitch : Control
