@@ -42,9 +42,10 @@ if ($LASTEXITCODE -ne 0) {
 
 Copy-Item $outExe (Join-Path $binDir "LiteOverlay.exe") -Force
 
-# Compile SetupLiteOverlay.exe
+# Compile SetupLiteOverlay.exe with embedded LiteOverlay.exe
 $outSetup = Join-Path $rootDir "SetupLiteOverlay.exe"
 & $csc /nologo /target:winexe /win32icon:$iconPath /out:$outSetup `
+    /res:$outExe,LiteOverlay.exe `
     /reference:System.Windows.Forms.dll `
     /reference:System.Drawing.dll `
     $setupCs

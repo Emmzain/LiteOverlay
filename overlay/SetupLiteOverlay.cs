@@ -582,28 +582,48 @@ namespace LiteOverlaySetup
                 }
                 progressBar.Value = 1;
 
-                // Step 2: Copy application binary instantly (no artificial delays!)
+                // Step 2: Extract embedded LiteOverlay.exe binary to installation folder
                 int filesCopied = 0;
                 foreach (string file in APP_FILES)
                 {
-                    string srcFile = Path.Combine(sourceDir, file);
-
-                    // Check overlay/bin/ fallback if running from root or build script
-                    if (!File.Exists(srcFile))
-                    {
-                        srcFile = Path.Combine(sourceDir, "overlay", "bin", file);
-                    }
-
                     string destFile = Path.Combine(installDir, file);
-
                     lblStatus.Text = "Installing: " + file;
                     Application.DoEvents();
 
-                    if (File.Exists(srcFile))
+                    bool extracted = false;
+                    try
                     {
-                        File.Copy(srcFile, destFile, true);
-                        filesCopied++;
+                        Assembly asm = Assembly.GetExecutingAssembly();
+                        using (Stream stream = asm.GetManifestResourceStream("LiteOverlay.exe"))
+                        {
+                            if (stream != null)
+                            {
+                                using (FileStream fs = new FileStream(destFile, FileMode.Create, FileAccess.Write))
+                                {
+                                    stream.CopyTo(fs);
+                                }
+                                extracted = true;
+                            }
+                        }
                     }
+                    catch { }
+
+                    if (!extracted)
+                    {
+                        string srcFile = Path.Combine(sourceDir, file);
+                        if (!File.Exists(srcFile))
+                        {
+                            srcFile = Path.Combine(sourceDir, "overlay", "bin", file);
+                        }
+
+                        if (File.Exists(srcFile))
+                        {
+                            File.Copy(srcFile, destFile, true);
+                            extracted = true;
+                        }
+                    }
+
+                    if (extracted) filesCopied++;
                     progressBar.Value = 1 + filesCopied;
                 }
 
