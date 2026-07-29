@@ -460,6 +460,7 @@ namespace LiteOverlay
         private FlowLayoutPanel gridSystemCards;
 
         private Label lblFpsVal, lblPingVal, lblRamVal, lblCpuVal, lblGpuVal, lblTempVal, lblBatVal, lblBatSub, lblNetVal, lblDiskVal;
+        private Label lblUpdateStatusText;
 
         private NotifyIcon trayIcon;
         private ContextMenuStrip trayMenu;
@@ -508,6 +509,40 @@ namespace LiteOverlay
 
             InitSensors();
             InitSystemTray();
+            ThreadPool.QueueUserWorkItem(CheckForUpdatesAsync);
+        }
+
+        private void CheckForUpdatesAsync(object state)
+        {
+            try
+            {
+                System.Net.ServicePointManager.SecurityProtocol = System.Net.SecurityProtocolType.Tls12;
+                using (var webClient = new System.Net.WebClient())
+                {
+                    webClient.Headers.Add("User-Agent", "LiteOverlay-Updater");
+                    string versionJson = webClient.DownloadString("https://litefps.vercel.app/version.json");
+                    if (versionJson.Contains("\"version\":"))
+                    {
+                        int vIdx = versionJson.IndexOf("\"version\":") + 10;
+                        int startQuote = versionJson.IndexOf("\"", vIdx) + 1;
+                        int endQuote = versionJson.IndexOf("\"", startQuote);
+                        string latestVersion = versionJson.Substring(startQuote, endQuote - startQuote);
+
+                        if (latestVersion != "1.2.0" && latestVersion != "v1.2.0")
+                        {
+                            this.BeginInvoke((MethodInvoker)delegate
+                            {
+                                if (lblUpdateStatusText != null)
+                                {
+                                    lblUpdateStatusText.Text = "⚡ New Update Available (" + latestVersion + ")";
+                                    lblUpdateStatusText.ForeColor = Color.FromArgb(255, 145, 0);
+                                }
+                            });
+                        }
+                    }
+                }
+            }
+            catch { }
         }
 
         private void InitSystemTray()
@@ -1693,7 +1728,7 @@ namespace LiteOverlay
                 }
             };
 
-            Label lblStatTitle = new Label { Text = "✔ Status: Up to Date (v1.2.0)", Font = new Font("Segoe UI", 10.5f, FontStyle.Bold), ForeColor = Color.FromArgb(0, 230, 118), Location = new Point(16, 16), AutoSize = true };
+            lblUpdateStatusText = new Label { Text = "✔ Status: Up to Date (v1.2.0)", Font = new Font("Segoe UI", 10.5f, FontStyle.Bold), ForeColor = Color.FromArgb(0, 230, 118), Location = new Point(16, 16), AutoSize = true };
             Label lblStatDesc = new Label
             {
                 Text = "When a new update is released by the developer, your installed app will update automatically.",
@@ -1703,7 +1738,7 @@ namespace LiteOverlay
                 Size = new Size(400, 45)
             };
 
-            pStatusBox.Controls.Add(lblStatTitle);
+            pStatusBox.Controls.Add(lblUpdateStatusText);
             pStatusBox.Controls.Add(lblStatDesc);
             boxUpdateInfo.Controls.Add(pStatusBox);
         }
