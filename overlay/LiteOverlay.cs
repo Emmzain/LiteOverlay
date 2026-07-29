@@ -1930,27 +1930,39 @@ namespace LiteOverlay
                     catch { }
 
                     // 3. Real CPU Load (%)
-                    if (cpuCounter != null)
+                    try
                     {
-                        try
+                        if (cpuCounter != null)
                         {
                             float val = cpuCounter.NextValue();
-                            AppState.CpuPct = Math.Min(100f, Math.Max(0f, val));
+                            if (val > 0f) AppState.CpuPct = Math.Min(100f, Math.Max(0f, val));
+                            else AppState.CpuPct = GetWmiCpuUsage();
                         }
-                        catch { }
+                        else
+                        {
+                            AppState.CpuPct = GetWmiCpuUsage();
+                        }
+                    }
+                    catch
+                    {
+                        AppState.CpuPct = GetWmiCpuUsage();
                     }
 
                     // 4. Real GPU Load (%)
-                    if (gpuCounter != null)
+                    try
                     {
-                        try
+                        if (gpuCounter != null)
                         {
                             float val = gpuCounter.NextValue();
-                            AppState.GpuPct = Math.Min(100f, Math.Max(0f, val));
+                            if (val > 0f) AppState.GpuPct = Math.Min(100f, Math.Max(0f, val));
+                            else AppState.GpuPct = GetWmiGpuUsage();
                         }
-                        catch { }
+                        else
+                        {
+                            AppState.GpuPct = GetWmiGpuUsage();
+                        }
                     }
-                    else
+                    catch
                     {
                         AppState.GpuPct = GetWmiGpuUsage();
                     }
@@ -2018,6 +2030,25 @@ namespace LiteOverlay
                         if (u > maxUtil) maxUtil = u;
                     }
                     return maxUtil;
+                }
+            }
+            catch { return 0f; }
+        }
+
+        private static float GetWmiCpuUsage()
+        {
+            try
+            {
+                using (System.Management.ManagementObjectSearcher searcher = new System.Management.ManagementObjectSearcher(@"root\cimv2", "SELECT LoadPercentage FROM Win32_Processor"))
+                {
+                    float totalLoad = 0;
+                    int count = 0;
+                    foreach (System.Management.ManagementObject obj in searcher.Get())
+                    {
+                        totalLoad += Convert.ToSingle(obj["LoadPercentage"]);
+                        count++;
+                    }
+                    return count > 0 ? (totalLoad / count) : 0f;
                 }
             }
             catch { return 0f; }
