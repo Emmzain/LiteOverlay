@@ -297,6 +297,7 @@ namespace LiteOverlaySetup
 
         private DarkTextBox txtInstallPath;
         private DarkCheckBox chkDesktopShortcut;
+        private DarkCheckBox chkRunApp;
         private DarkButton btnInstall;
         private DarkButton btnCancel;
         private DarkButton btnBrowse;
@@ -492,9 +493,19 @@ namespace LiteOverlaySetup
             chkDesktopShortcut.Font = new Font("Segoe UI", 10f);
             chkDesktopShortcut.ForeColor = Color.FromArgb(200, 210, 225);
             chkDesktopShortcut.Checked = true;
-            chkDesktopShortcut.Location = new Point(48, 305);
+            chkDesktopShortcut.Location = new Point(48, 298);
             chkDesktopShortcut.Size = new Size(300, 28);
             this.Controls.Add(chkDesktopShortcut);
+
+            // ── Run / Launch App Checkbox ──
+            chkRunApp = new DarkCheckBox();
+            chkRunApp.Text = "Launch LiteOverlay after installation";
+            chkRunApp.Font = new Font("Segoe UI", 10f);
+            chkRunApp.ForeColor = Color.FromArgb(200, 210, 225);
+            chkRunApp.Checked = true;
+            chkRunApp.Location = new Point(48, 332);
+            chkRunApp.Size = new Size(350, 28);
+            this.Controls.Add(chkRunApp);
 
             // ── Progress Bar ──
             progressBar = new DarkProgressBar();
@@ -724,17 +735,7 @@ namespace LiteOverlaySetup
                 lblStatus.Text = "\u2713 Installation complete!";
                 lblStatus.ForeColor = ACCENT;
 
-                DialogResult result = MessageBox.Show(
-                    "LiteOverlay installed successfully!\n\n" +
-                    "\u2714 Location: " + installDir + "\n" +
-                    (chkDesktopShortcut.Checked ? "\u2714 Desktop shortcut created\n" : "") +
-                    "\u2714 Registered in Add/Remove Programs\n\n" +
-                    "Launch LiteOverlay now?",
-                    "LiteOverlay Setup - Complete",
-                    MessageBoxButtons.YesNo,
-                    MessageBoxIcon.Information);
-
-                if (result == DialogResult.Yes)
+                if (chkRunApp.Checked)
                 {
                     string exePath = Path.Combine(installDir, "LiteOverlay.exe");
                     if (File.Exists(exePath))
