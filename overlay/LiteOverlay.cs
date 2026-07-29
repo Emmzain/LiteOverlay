@@ -946,7 +946,7 @@ namespace LiteOverlay
 
             if (hudWindow != null && !hudWindow.IsDisposed)
             {
-                hudWindow.Close();
+                hudWindow.Dispose();
             }
 
             if (trayIcon != null)
