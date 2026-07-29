@@ -1178,7 +1178,7 @@ namespace LiteOverlay
 
             int cy = 390;
 
-            CheckBox chkBorder = new CheckBox { Text = "Overlay Border Line", Checked = AppState.ShowBorder, Location = new Point(18, cy), AutoSize = true, Font = new Font("Segoe UI", 9f), ForeColor = Color.White };
+            ModernCheckBox chkBorder = new ModernCheckBox { Text = "Overlay Border Line", Checked = AppState.ShowBorder, Location = new Point(18, cy), Size = new Size(185, 28) };
             chkBorder.CheckedChanged += (s, e) =>
             {
                 AppState.ShowBorder = chkBorder.Checked;
@@ -1186,16 +1186,16 @@ namespace LiteOverlay
             };
             boxApp.Controls.Add(chkBorder);
 
-            CheckBox chkTitles = new CheckBox { Text = "Show Stat Titles", Checked = AppState.ShowLabels, Location = new Point(210, cy), AutoSize = true, Font = new Font("Segoe UI", 9f), ForeColor = Color.White };
+            ModernCheckBox chkTitles = new ModernCheckBox { Text = "Show Stat Titles", Checked = AppState.ShowLabels, Location = new Point(220, cy), Size = new Size(185, 28) };
             chkTitles.CheckedChanged += (s, e) =>
             {
                 AppState.ShowLabels = chkTitles.Checked;
                 hudWindow.RefreshHud();
             };
             boxApp.Controls.Add(chkTitles);
-            cy += 32;
+            cy += 36;
 
-            CheckBox chkGlow = new CheckBox { Text = "Border Accent Glow", Checked = AppState.GlowEffect, Location = new Point(18, cy), AutoSize = true, Font = new Font("Segoe UI", 9f), ForeColor = Color.White };
+            ModernCheckBox chkGlow = new ModernCheckBox { Text = "Border Accent Glow", Checked = AppState.GlowEffect, Location = new Point(18, cy), Size = new Size(185, 28) };
             chkGlow.CheckedChanged += (s, e) =>
             {
                 AppState.GlowEffect = chkGlow.Checked;
@@ -1203,7 +1203,7 @@ namespace LiteOverlay
             };
             boxApp.Controls.Add(chkGlow);
 
-            CheckBox chkLock = new CheckBox { Text = "Lock Overlay Position", Checked = AppState.LockPosition, Location = new Point(210, cy), AutoSize = true, Font = new Font("Segoe UI", 9f), ForeColor = Color.White };
+            ModernCheckBox chkLock = new ModernCheckBox { Text = "Lock Overlay Position", Checked = AppState.LockPosition, Location = new Point(220, cy), Size = new Size(200, 28) };
             chkLock.CheckedChanged += (s, e) =>
             {
                 AppState.LockPosition = chkLock.Checked;
@@ -2174,6 +2174,122 @@ namespace LiteOverlay
             {
                 g.FillEllipse(knobBrush, knobX, knobY, knobSize, knobSize);
             }
+        }
+    }
+
+    public class ModernCheckBox : Control
+    {
+        private bool isChecked = false;
+        private bool isHovered = false;
+
+        public event EventHandler CheckedChanged;
+
+        public bool Checked
+        {
+            get { return isChecked; }
+            set
+            {
+                if (isChecked != value)
+                {
+                    isChecked = value;
+                    Invalidate();
+                    if (CheckedChanged != null) CheckedChanged(this, EventArgs.Empty);
+                }
+            }
+        }
+
+        public ModernCheckBox()
+        {
+            SetStyle(ControlStyles.UserPaint | ControlStyles.AllPaintingInWmPaint | ControlStyles.OptimizedDoubleBuffer, true);
+            Height = 28;
+            Cursor = Cursors.Hand;
+            ForeColor = Color.White;
+            Font = new Font("Segoe UI", 9f);
+        }
+
+        protected override void OnMouseEnter(EventArgs e) { isHovered = true; Invalidate(); base.OnMouseEnter(e); }
+        protected override void OnMouseLeave(EventArgs e) { isHovered = false; Invalidate(); base.OnMouseLeave(e); }
+
+        protected override void OnClick(EventArgs e)
+        {
+            Checked = !Checked;
+            base.OnClick(e);
+        }
+
+        protected override void OnPaint(PaintEventArgs e)
+        {
+            Graphics g = e.Graphics;
+            g.SmoothingMode = SmoothingMode.AntiAlias;
+
+            // Box Size
+            int boxSize = 20;
+            int boxY = (Height - boxSize) / 2;
+            Rectangle boxRect = new Rectangle(0, boxY, boxSize, boxSize);
+
+            using (GraphicsPath path = GetRoundedRectPath(boxRect, 5))
+            {
+                if (isChecked)
+                {
+                    using (SolidBrush bgBrush = new SolidBrush(AppState.AccentColor))
+                    {
+                        g.FillPath(bgBrush, path);
+                    }
+
+                    // Draw Checkmark
+                    using (Pen checkPen = new Pen(Color.FromArgb(6, 8, 14), 2.2f))
+                    {
+                        checkPen.StartCap = LineCap.Round;
+                        checkPen.EndCap = LineCap.Round;
+                        int cx = boxRect.X + 4;
+                        int cy = boxRect.Y + 10;
+                        g.DrawLine(checkPen, cx, cy, cx + 4, cy + 4);
+                        g.DrawLine(checkPen, cx + 4, cy + 4, cx + 12, cy - 4);
+                    }
+                }
+                else
+                {
+                    using (SolidBrush bgBrush = new SolidBrush(Color.FromArgb(15, 20, 34)))
+                    {
+                        g.FillPath(bgBrush, path);
+                    }
+
+                    Color borderCol = isHovered ? AppState.AccentColor : Color.FromArgb(40, 52, 72);
+                    using (Pen borderPen = new Pen(borderCol, 1.4f))
+                    {
+                        g.DrawPath(borderPen, path);
+                    }
+                }
+            }
+
+            // Draw Label Text
+            if (!string.IsNullOrEmpty(Text))
+            {
+                using (SolidBrush textBrush = new SolidBrush(isHovered ? Color.White : Color.FromArgb(200, 210, 225)))
+                {
+                    StringFormat sf = new StringFormat
+                    {
+                        LineAlignment = StringAlignment.Center
+                    };
+                    g.DrawString(Text, Font, textBrush, new RectangleF(boxSize + 10, 0, Width - boxSize - 10, Height), sf);
+                }
+            }
+        }
+
+        private GraphicsPath GetRoundedRectPath(Rectangle rect, int radius)
+        {
+            GraphicsPath path = new GraphicsPath();
+            if (radius <= 0)
+            {
+                path.AddRectangle(rect);
+                return path;
+            }
+            int d = radius * 2;
+            path.AddArc(rect.X, rect.Y, d, d, 180, 90);
+            path.AddArc(rect.Right - d, rect.Y, d, d, 270, 90);
+            path.AddArc(rect.Right - d, rect.Bottom - d, d, d, 0, 90);
+            path.AddArc(rect.X, rect.Bottom - d, d, d, 90, 90);
+            path.CloseFigure();
+            return path;
         }
     }
 
