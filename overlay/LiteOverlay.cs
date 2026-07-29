@@ -1661,7 +1661,7 @@ namespace LiteOverlay
 
             Label lblUpdTitle = new Label
             {
-                Text = "🔄  Auto Updates & Web Sync",
+                Text = "🔄  Automatic Updates",
                 Font = new Font("Segoe UI", 11.5f, FontStyle.Bold),
                 ForeColor = Color.White,
                 Location = new Point(18, 16),
@@ -1671,7 +1671,7 @@ namespace LiteOverlay
 
             Label lblUpdSub = new Label
             {
-                Text = "Cloud repository sync & automatic update status",
+                Text = "App update status & automatic sync",
                 Font = new Font("Segoe UI", 8.5f, FontStyle.Regular),
                 ForeColor = Color.FromArgb(136, 152, 168),
                 Location = new Point(18, 42),
@@ -1682,7 +1682,7 @@ namespace LiteOverlay
             Panel pStatusBox = new Panel
             {
                 Location = new Point(18, 80),
-                Size = new Size(438, 120),
+                Size = new Size(438, 100),
                 BackColor = Color.FromArgb(15, 20, 34)
             };
             pStatusBox.Paint += (s, e) =>
@@ -1693,14 +1693,14 @@ namespace LiteOverlay
                 }
             };
 
-            Label lblStatTitle = new Label { Text = "✔ Status: Up to Date", Font = new Font("Segoe UI", 10.5f, FontStyle.Bold), ForeColor = Color.FromArgb(0, 230, 118), Location = new Point(16, 16), AutoSize = true };
+            Label lblStatTitle = new Label { Text = "✔ Status: Up to Date (v1.2.0)", Font = new Font("Segoe UI", 10.5f, FontStyle.Bold), ForeColor = Color.FromArgb(0, 230, 118), Location = new Point(16, 16), AutoSize = true };
             Label lblStatDesc = new Label
             {
-                Text = "LiteOverlay automatically checks GitHub / Vercel cloud repository on launch. When developer pushes a new release, installed client apps receive updates automatically.",
-                Font = new Font("Segoe UI", 8.5f),
+                Text = "When a new update is released by the developer, your installed app will update automatically.",
+                Font = new Font("Segoe UI", 8.8f),
                 ForeColor = Color.FromArgb(180, 195, 215),
                 Location = new Point(16, 45),
-                Size = new Size(400, 60)
+                Size = new Size(400, 45)
             };
 
             pStatusBox.Controls.Add(lblStatTitle);
