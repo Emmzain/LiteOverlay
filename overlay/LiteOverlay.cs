@@ -484,17 +484,14 @@ namespace LiteOverlay
 
             try
             {
-                string logoPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Logo.png");
-                if (File.Exists(logoPath))
+                string exePath = System.Reflection.Assembly.GetExecutingAssembly().Location;
+                if (!string.IsNullOrEmpty(exePath) && File.Exists(exePath))
                 {
-                    using (Bitmap bmp = new Bitmap(logoPath))
-                    {
-                        Icon = Icon.FromHandle(bmp.GetHicon());
-                    }
+                    Icon = Icon.ExtractAssociatedIcon(exePath);
                 }
-                else if (File.Exists("app.ico"))
+                else
                 {
-                    Icon = new Icon("app.ico");
+                    Icon = SystemIcons.Application;
                 }
             }
             catch

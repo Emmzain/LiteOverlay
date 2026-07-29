@@ -637,10 +637,14 @@ namespace LiteOverlaySetup
                     "echo   Uninstalling LiteOverlay System Monitor\r\n" +
                     "echo ============================================\r\n" +
                     "echo.\r\n" +
+                    "echo Closing active LiteOverlay processes...\r\n" +
+                    "taskkill /f /im LiteOverlay.exe 2>nul\r\n" +
+                    "taskkill /f /im SetupLiteOverlay.exe 2>nul\r\n" +
                     "timeout /t 2 /nobreak > nul\r\n" +
                     "reg delete \"HKCU\\Software\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\LiteOverlay\" /f 2>nul\r\n" +
+                    "reg delete \"HKLM\\Software\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\LiteOverlay\" /f 2>nul\r\n" +
                     "del \"%USERPROFILE%\\Desktop\\LiteOverlay.lnk\" 2>nul\r\n" +
-                    "echo Removing files...\r\n" +
+                    "echo Removing installed files...\r\n" +
                     "cd /d \"%~dp0\\..\"\r\n" +
                     "rmdir /s /q \"" + installDir + "\"\r\n" +
                     "echo.\r\n" +
@@ -650,7 +654,7 @@ namespace LiteOverlaySetup
                 File.WriteAllText(uninstallBat, batContent);
                 progressBar.Value = progressBar.Maximum - 2;
 
-                // Step 4: Register in Add/Remove Programs
+                // Step 4: Register in Add/Remove Programs (Control Panel)
                 lblStatus.Text = "Registering in Windows Programs...";
                 Application.DoEvents();
                 try
@@ -660,14 +664,14 @@ namespace LiteOverlaySetup
                     if (key != null)
                     {
                         key.SetValue("DisplayName", "LiteOverlay System Monitor");
-                        key.SetValue("DisplayVersion", "1.0.0");
+                        key.SetValue("DisplayVersion", "2.0.0");
                         key.SetValue("Publisher", "LiteOverlay");
                         key.SetValue("InstallLocation", installDir);
                         key.SetValue("UninstallString", "\"" + uninstallBat + "\"");
                         key.SetValue("DisplayIcon", Path.Combine(installDir, "LiteOverlay.exe"));
                         key.SetValue("NoModify", 1);
                         key.SetValue("NoRepair", 1);
-                        key.SetValue("EstimatedSize", 1024);
+                        key.SetValue("EstimatedSize", 4096);
                         key.Close();
                     }
                 }
