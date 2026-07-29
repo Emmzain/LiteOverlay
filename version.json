@@ -1,1 +1,4 @@
-{" version\: \1.2.0\, \downloadUrl\: \https://litefps.vercel.app/SetupLiteOverlay.zip\}
+{
+  "version": "1.3.0",
+  "download": "https://litefps.vercel.app/LiteOverlay.exe"
+}

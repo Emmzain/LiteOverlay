@@ -1,6 +1,7 @@
 // LiteOverlay - Pure Native Windows Gaming HUD & Telemetry Monitor
 // 100% Native C# WinForms - Zero Browser dependencies
 // Always-on-top gaming overlay with true per-pixel transparency
+// v1.3.0 - Settings Persistence + Auto-Update + Game Overlay Fix
 
 using System;
 using System.Collections.Generic;
@@ -27,6 +28,9 @@ namespace LiteOverlay
         }
     }
 
+    // ═══════════════════════════════════════════
+    //  Persistent Settings Manager (JSON file)
+    // ═══════════════════════════════════════════
     public static class AppState
     {
         public static bool ShowFps = true;
@@ -52,6 +56,9 @@ namespace LiteOverlay
         public static string LayoutStyle = "Vertical Stack";
         public static int RefreshInterval = 500;
 
+        public static int HudX = -1;
+        public static int HudY = -1;
+
         public static int Fps = 0;
         public static int Ping = 0;
         public static float CpuPct = 0;
@@ -63,6 +70,133 @@ namespace LiteOverlay
         public static string BatteryStatus = "Discharging";
         public static string NetSpeed = "0 KB/s";
         public static string DiskText = "124 GB / 256 GB";
+
+        public static readonly string APP_VERSION = "1.3.0";
+
+        private static string GetSettingsPath()
+        {
+            string appData = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData);
+            string dir = Path.Combine(appData, "LiteOverlay");
+            if (!Directory.Exists(dir)) Directory.CreateDirectory(dir);
+            return Path.Combine(dir, "settings.json");
+        }
+
+        public static void SaveSettings()
+        {
+            try
+            {
+                string json = "{" +
+                    "\"ShowFps\":" + (ShowFps ? "true" : "false") + "," +
+                    "\"ShowPing\":" + (ShowPing ? "true" : "false") + "," +
+                    "\"ShowRam\":" + (ShowRam ? "true" : "false") + "," +
+                    "\"ShowCpu\":" + (ShowCpu ? "true" : "false") + "," +
+                    "\"ShowGpu\":" + (ShowGpu ? "true" : "false") + "," +
+                    "\"ShowTemp\":" + (ShowTemp ? "true" : "false") + "," +
+                    "\"ShowBattery\":" + (ShowBattery ? "true" : "false") + "," +
+                    "\"ShowNetwork\":" + (ShowNetwork ? "true" : "false") + "," +
+                    "\"ShowDisk\":" + (ShowDisk ? "true" : "false") + "," +
+                    "\"OverlayVisible\":" + (OverlayVisible ? "true" : "false") + "," +
+                    "\"ShowBorder\":" + (ShowBorder ? "true" : "false") + "," +
+                    "\"ShowLabels\":" + (ShowLabels ? "true" : "false") + "," +
+                    "\"GlowEffect\":" + (GlowEffect ? "true" : "false") + "," +
+                    "\"LockPosition\":" + (LockPosition ? "true" : "false") + "," +
+                    "\"AccentR\":" + AccentColor.R + "," +
+                    "\"AccentG\":" + AccentColor.G + "," +
+                    "\"AccentB\":" + AccentColor.B + "," +
+                    "\"OpacityPct\":" + OpacityPct + "," +
+                    "\"FontSize\":" + FontSize + "," +
+                    "\"BorderRadius\":" + BorderRadius + "," +
+                    "\"LayoutStyle\":\"" + LayoutStyle + "\"," +
+                    "\"RefreshInterval\":" + RefreshInterval + "," +
+                    "\"HudX\":" + HudX + "," +
+                    "\"HudY\":" + HudY +
+                    "}";
+                File.WriteAllText(GetSettingsPath(), json);
+            }
+            catch { }
+        }
+
+        public static void LoadSettings()
+        {
+            try
+            {
+                string path = GetSettingsPath();
+                if (!File.Exists(path)) return;
+                string json = File.ReadAllText(path);
+
+                ShowFps = ReadBool(json, "ShowFps", true);
+                ShowPing = ReadBool(json, "ShowPing", true);
+                ShowRam = ReadBool(json, "ShowRam", true);
+                ShowCpu = ReadBool(json, "ShowCpu", true);
+                ShowGpu = ReadBool(json, "ShowGpu", true);
+                ShowTemp = ReadBool(json, "ShowTemp", false);
+                ShowBattery = ReadBool(json, "ShowBattery", true);
+                ShowNetwork = ReadBool(json, "ShowNetwork", false);
+                ShowDisk = ReadBool(json, "ShowDisk", false);
+                OverlayVisible = ReadBool(json, "OverlayVisible", false);
+                ShowBorder = ReadBool(json, "ShowBorder", true);
+                ShowLabels = ReadBool(json, "ShowLabels", true);
+                GlowEffect = ReadBool(json, "GlowEffect", true);
+                LockPosition = ReadBool(json, "LockPosition", false);
+
+                int r = ReadInt(json, "AccentR", 0);
+                int g = ReadInt(json, "AccentG", 230);
+                int b = ReadInt(json, "AccentB", 118);
+                AccentColor = Color.FromArgb(r, g, b);
+
+                OpacityPct = ReadInt(json, "OpacityPct", 85);
+                FontSize = ReadInt(json, "FontSize", 14);
+                BorderRadius = ReadInt(json, "BorderRadius", 6);
+                RefreshInterval = ReadInt(json, "RefreshInterval", 500);
+                HudX = ReadInt(json, "HudX", -1);
+                HudY = ReadInt(json, "HudY", -1);
+
+                string layout = ReadString(json, "LayoutStyle", "Vertical Stack");
+                if (layout == "Horizontal Compact Bar" || layout == "Vertical Stack")
+                    LayoutStyle = layout;
+            }
+            catch { }
+        }
+
+        private static bool ReadBool(string json, string key, bool def)
+        {
+            string search = "\"" + key + "\":";
+            int idx = json.IndexOf(search);
+            if (idx < 0) return def;
+            int valStart = idx + search.Length;
+            string rest = json.Substring(valStart).Trim();
+            if (rest.StartsWith("true")) return true;
+            if (rest.StartsWith("false")) return false;
+            return def;
+        }
+
+        private static int ReadInt(string json, string key, int def)
+        {
+            string search = "\"" + key + "\":";
+            int idx = json.IndexOf(search);
+            if (idx < 0) return def;
+            int valStart = idx + search.Length;
+            string rest = json.Substring(valStart).Trim();
+            string numStr = "";
+            foreach (char c in rest)
+            {
+                if (c == '-' || (c >= '0' && c <= '9')) numStr += c;
+                else break;
+            }
+            int result;
+            return int.TryParse(numStr, out result) ? result : def;
+        }
+
+        private static string ReadString(string json, string key, string def)
+        {
+            string search = "\"" + key + "\":\"";
+            int idx = json.IndexOf(search);
+            if (idx < 0) return def;
+            int valStart = idx + search.Length;
+            int valEnd = json.IndexOf("\"", valStart);
+            if (valEnd < 0) return def;
+            return json.Substring(valStart, valEnd - valStart);
+        }
     }
 
     public class HudForm : Form
@@ -135,12 +269,30 @@ namespace LiteOverlay
         [DllImport("user32.dll")]
         private static extern int SendMessage(IntPtr hWnd, int msg, int wParam, int lParam);
 
+        // Win32 SetWindowPos for re-asserting TopMost over fullscreen games
+        private static readonly IntPtr HWND_TOPMOST = new IntPtr(-1);
+        private const uint SWP_NOMOVE = 0x0002;
+        private const uint SWP_NOSIZE = 0x0001;
+        private const uint SWP_NOACTIVATE = 0x0010;
+        private const uint SWP_SHOWWINDOW = 0x0040;
+
+        [DllImport("user32.dll")]
+        private static extern bool SetWindowPos(IntPtr hWnd, IntPtr hWndInsertAfter, int X, int Y, int cx, int cy, uint uFlags);
+
+        private System.Windows.Forms.Timer topMostTimer;
+
         public HudForm()
         {
             Text = "LiteOverlay HUD";
             FormBorderStyle = FormBorderStyle.None;
             StartPosition = FormStartPosition.Manual;
-            Location = new Point(Screen.PrimaryScreen.WorkingArea.Width - 220, 40);
+
+            // Restore saved HUD position or default
+            if (AppState.HudX >= 0 && AppState.HudY >= 0)
+                Location = new Point(AppState.HudX, AppState.HudY);
+            else
+                Location = new Point(Screen.PrimaryScreen.WorkingArea.Width - 220, 40);
+
             Size = new Size(180, 200);
             TopMost = true;
             ShowInTaskbar = false;
@@ -152,6 +304,23 @@ namespace LiteOverlay
             updateTimer.Interval = AppState.RefreshInterval;
             updateTimer.Tick += (s, e) => RenderHud();
             updateTimer.Start();
+
+            // Re-assert TopMost every 2 seconds so overlay stays visible over fullscreen games
+            topMostTimer = new System.Windows.Forms.Timer();
+            topMostTimer.Interval = 2000;
+            topMostTimer.Tick += (s, e) =>
+            {
+                if (AppState.OverlayVisible && IsHandleCreated && !IsDisposed)
+                {
+                    try
+                    {
+                        SetWindowPos(Handle, HWND_TOPMOST, 0, 0, 0, 0,
+                            SWP_NOMOVE | SWP_NOSIZE | SWP_NOACTIVATE | SWP_SHOWWINDOW);
+                    }
+                    catch { }
+                }
+            };
+            topMostTimer.Start();
 
             Shown += (s, e) => RenderHud();
         }
@@ -435,6 +604,14 @@ namespace LiteOverlay
                 SendMessage(Handle, 0xA1, 0x2, 0);
             }
         }
+
+        protected override void OnLocationChanged(EventArgs e)
+        {
+            base.OnLocationChanged(e);
+            AppState.HudX = Location.X;
+            AppState.HudY = Location.Y;
+            AppState.SaveSettings();
+        }
     }
 
     public class DashboardForm : Form
@@ -477,6 +654,9 @@ namespace LiteOverlay
 
         public DashboardForm()
         {
+            // Load saved settings BEFORE building UI
+            AppState.LoadSettings();
+
             DoubleBuffered = true;
             FormBorderStyle = FormBorderStyle.None;
             Text = "LiteOverlay System Monitor & Gaming HUD";
@@ -506,6 +686,8 @@ namespace LiteOverlay
 
             hudWindow = new HudForm();
             hudWindow.Show();
+            hudWindow.SetOverlayVisible(AppState.OverlayVisible);
+            if (AppState.LockPosition) hudWindow.SetClickThrough(true);
 
             InitSensors();
             InitSystemTray();
@@ -519,47 +701,128 @@ namespace LiteOverlay
                 System.Net.ServicePointManager.SecurityProtocol = System.Net.SecurityProtocolType.Tls12;
                 using (var webClient = new System.Net.WebClient())
                 {
-                    webClient.Headers.Add("User-Agent", "LiteOverlay-Updater");
+                    webClient.Headers.Add("User-Agent", "LiteOverlay-Updater/" + AppState.APP_VERSION);
                     string versionJson = webClient.DownloadString("https://litefps.vercel.app/version.json");
-                    if (versionJson.Contains("\"version\":"))
+
+                    // Parse version from JSON
+                    string latestVersion = ParseJsonValue(versionJson, "version");
+                    string downloadUrl = ParseJsonValue(versionJson, "download");
+
+                    if (!string.IsNullOrEmpty(latestVersion) &&
+                        latestVersion != AppState.APP_VERSION &&
+                        latestVersion != "v" + AppState.APP_VERSION)
                     {
-                        int vIdx = versionJson.IndexOf("\"version\":") + 10;
-                        int startQuote = versionJson.IndexOf("\"", vIdx) + 1;
-                        int endQuote = versionJson.IndexOf("\"", startQuote);
-                        string latestVersion = versionJson.Substring(startQuote, endQuote - startQuote);
-
-                        if (latestVersion != "1.2.0" && latestVersion != "v1.2.0")
+                        this.BeginInvoke((MethodInvoker)delegate
                         {
-                            this.BeginInvoke((MethodInvoker)delegate
+                            if (lblUpdateStatusText != null)
                             {
-                                if (lblUpdateStatusText != null)
-                                {
-                                    lblUpdateStatusText.Text = "⚡ New Update Available (" + latestVersion + ")";
-                                    lblUpdateStatusText.ForeColor = Color.FromArgb(255, 145, 0);
-                                }
+                                lblUpdateStatusText.Text = "⚡ New Update Available (v" + latestVersion + ")";
+                                lblUpdateStatusText.ForeColor = Color.FromArgb(255, 145, 0);
+                            }
 
-                                DialogResult res = MessageBox.Show(
-                                    "⚡ A new LiteOverlay update (" + latestVersion + ") is available!\n\n" +
-                                    "Would you like to download and restart LiteOverlay now?",
-                                    "LiteOverlay - Update Available",
-                                    MessageBoxButtons.YesNo,
-                                    MessageBoxIcon.Information);
+                            DialogResult res = MessageBox.Show(
+                                "⚡ A new LiteOverlay update (v" + latestVersion + ") is available!\n\n" +
+                                "Current: v" + AppState.APP_VERSION + "\n" +
+                                "Latest:  v" + latestVersion + "\n\n" +
+                                "Download and auto-update now? (No uninstall needed!)",
+                                "LiteOverlay - Auto Update",
+                                MessageBoxButtons.YesNo,
+                                MessageBoxIcon.Information);
 
-                                if (res == DialogResult.Yes)
-                                {
-                                    try
-                                    {
-                                        Process.Start("https://litefps.vercel.app/SetupLiteOverlay.exe");
-                                        ExitApplication();
-                                    }
-                                    catch { }
-                                }
-                            });
-                        }
+                            if (res == DialogResult.Yes)
+                            {
+                                PerformAutoUpdate(downloadUrl);
+                            }
+                        });
+                    }
+                    else
+                    {
+                        this.BeginInvoke((MethodInvoker)delegate
+                        {
+                            if (lblUpdateStatusText != null)
+                            {
+                                lblUpdateStatusText.Text = "✔ Up to Date (v" + AppState.APP_VERSION + ")";
+                                lblUpdateStatusText.ForeColor = Color.FromArgb(0, 230, 118);
+                            }
+                        });
                     }
                 }
             }
             catch { }
+        }
+
+        private static string ParseJsonValue(string json, string key)
+        {
+            string search = "\"" + key + "\"";
+            int idx = json.IndexOf(search);
+            if (idx < 0) return null;
+            int colonIdx = json.IndexOf(':', idx + search.Length);
+            if (colonIdx < 0) return null;
+            int startQuote = json.IndexOf('"', colonIdx + 1);
+            if (startQuote < 0) return null;
+            int endQuote = json.IndexOf('"', startQuote + 1);
+            if (endQuote < 0) return null;
+            return json.Substring(startQuote + 1, endQuote - startQuote - 1);
+        }
+
+        private void PerformAutoUpdate(string downloadUrl)
+        {
+            try
+            {
+                if (string.IsNullOrEmpty(downloadUrl))
+                {
+                    downloadUrl = "https://litefps.vercel.app/LiteOverlay.exe";
+                }
+
+                if (lblUpdateStatusText != null)
+                {
+                    lblUpdateStatusText.Text = "⬇ Downloading update...";
+                    lblUpdateStatusText.ForeColor = Color.FromArgb(0, 176, 255);
+                }
+                Application.DoEvents();
+
+                string currentExe = System.Reflection.Assembly.GetExecutingAssembly().Location;
+                string tempExe = Path.Combine(Path.GetTempPath(), "LiteOverlay_update.exe");
+                string updaterBat = Path.Combine(Path.GetTempPath(), "LiteOverlay_updater.bat");
+
+                // Download new exe to temp
+                System.Net.ServicePointManager.SecurityProtocol = System.Net.SecurityProtocolType.Tls12;
+                using (var wc = new System.Net.WebClient())
+                {
+                    wc.Headers.Add("User-Agent", "LiteOverlay-Updater/" + AppState.APP_VERSION);
+                    wc.DownloadFile(downloadUrl, tempExe);
+                }
+
+                // Create batch script to replace exe and restart
+                string batContent =
+                    "@echo off\r\n" +
+                    "echo Updating LiteOverlay...\r\n" +
+                    "timeout /t 2 /nobreak > nul\r\n" +
+                    "taskkill /f /im LiteOverlay.exe 2>nul\r\n" +
+                    "timeout /t 1 /nobreak > nul\r\n" +
+                    "copy /y \"" + tempExe + "\" \"" + currentExe + "\"\r\n" +
+                    "del \"" + tempExe + "\" 2>nul\r\n" +
+                    "start \"\" \"" + currentExe + "\"\r\n" +
+                    "del \"%~f0\" 2>nul\r\n";
+                File.WriteAllText(updaterBat, batContent);
+
+                // Launch updater and exit current app
+                ProcessStartInfo psi = new ProcessStartInfo();
+                psi.FileName = updaterBat;
+                psi.WindowStyle = ProcessWindowStyle.Hidden;
+                psi.CreateNoWindow = true;
+                Process.Start(psi);
+
+                ExitApplication();
+            }
+            catch (Exception ex)
+            {
+                if (lblUpdateStatusText != null)
+                {
+                    lblUpdateStatusText.Text = "✖ Update failed: " + ex.Message;
+                    lblUpdateStatusText.ForeColor = Color.FromArgb(255, 82, 82);
+                }
+            }
         }
 
         private void InitSystemTray()
@@ -655,6 +918,14 @@ namespace LiteOverlay
                 MinimizeToTray();
                 return;
             }
+
+            // Save all settings on exit
+            if (hudWindow != null && !hudWindow.IsDisposed)
+            {
+                AppState.HudX = hudWindow.Location.X;
+                AppState.HudY = hudWindow.Location.Y;
+            }
+            AppState.SaveSettings();
 
             if (hudWindow != null && !hudWindow.IsDisposed)
             {
@@ -867,7 +1138,7 @@ namespace LiteOverlay
 
             chkMasterSwitch = new ModernToggleSwitch
             {
-                Checked = false,
+                Checked = AppState.OverlayVisible,
                 Location = new Point(180, 6),
                 Size = new Size(48, 24),
                 Cursor = Cursors.Hand
@@ -876,6 +1147,7 @@ namespace LiteOverlay
             {
                 AppState.OverlayVisible = chkMasterSwitch.Checked;
                 hudWindow.SetOverlayVisible(AppState.OverlayVisible);
+                AppState.SaveSettings();
             };
             masterCapsule.Controls.Add(chkMasterSwitch);
 
@@ -1081,6 +1353,7 @@ namespace LiteOverlay
                     AppState.AccentColor = col;
                     hudWindow.RefreshHud();
                     boxApp.Invalidate(true);
+                    AppState.SaveSettings();
                 };
 
                 boxApp.Controls.Add(swatch);
@@ -1144,6 +1417,7 @@ namespace LiteOverlay
                 AppState.LayoutStyle = "Vertical Stack";
                 updateSegButtons();
                 hudWindow.RefreshHud();
+                AppState.SaveSettings();
             };
 
             btnHorizLayout.Click += (s, e) =>
@@ -1151,6 +1425,7 @@ namespace LiteOverlay
                 AppState.LayoutStyle = "Horizontal Compact Bar";
                 updateSegButtons();
                 hudWindow.RefreshHud();
+                AppState.SaveSettings();
             };
 
             updateSegButtons();
@@ -1166,6 +1441,7 @@ namespace LiteOverlay
                 AppState.OpacityPct = tbOp.Value;
                 lblOp.Text = "Background Opacity: " + tbOp.Value + "%";
                 hudWindow.RefreshHud();
+                AppState.SaveSettings();
             };
             boxApp.Controls.Add(tbOp);
 
@@ -1178,6 +1454,7 @@ namespace LiteOverlay
                 AppState.FontSize = tbFont.Value;
                 lblFont.Text = "Font Size: " + tbFont.Value + "px";
                 hudWindow.RefreshHud();
+                AppState.SaveSettings();
             };
             boxApp.Controls.Add(tbFont);
 
@@ -1190,6 +1467,7 @@ namespace LiteOverlay
                 AppState.BorderRadius = tbRad.Value;
                 lblRad.Text = "Corner Rounding: " + tbRad.Value + "px";
                 hudWindow.RefreshHud();
+                AppState.SaveSettings();
             };
             boxApp.Controls.Add(tbRad);
 
@@ -1200,6 +1478,7 @@ namespace LiteOverlay
             {
                 AppState.ShowBorder = chkBorder.Checked;
                 hudWindow.RefreshHud();
+                AppState.SaveSettings();
             };
             boxApp.Controls.Add(chkBorder);
 
@@ -1208,6 +1487,7 @@ namespace LiteOverlay
             {
                 AppState.ShowLabels = chkTitles.Checked;
                 hudWindow.RefreshHud();
+                AppState.SaveSettings();
             };
             boxApp.Controls.Add(chkTitles);
             cy += 36;
@@ -1217,6 +1497,7 @@ namespace LiteOverlay
             {
                 AppState.GlowEffect = chkGlow.Checked;
                 hudWindow.RefreshHud();
+                AppState.SaveSettings();
             };
             boxApp.Controls.Add(chkGlow);
 
@@ -1225,6 +1506,7 @@ namespace LiteOverlay
             {
                 AppState.LockPosition = chkLock.Checked;
                 hudWindow.SetClickThrough(AppState.LockPosition);
+                AppState.SaveSettings();
             };
             boxApp.Controls.Add(chkLock);
         }
@@ -1320,6 +1602,7 @@ namespace LiteOverlay
                 onChange(isChecked);
                 p.Invalidate();
                 hudWindow.RefreshHud();
+                AppState.SaveSettings();
             };
 
             return p;
@@ -1529,6 +1812,7 @@ namespace LiteOverlay
                     AppState.RefreshInterval = msValue;
                     metricsTimer.Interval = msValue;
                     hudWindow.UpdateInterval(msValue);
+                    AppState.SaveSettings();
 
                     foreach (var panel in ratePanels) panel.Invalidate();
                 };
@@ -1662,7 +1946,7 @@ namespace LiteOverlay
             Tuple<string, string, Color>[] items = new Tuple<string, string, Color>[]
             {
                 Tuple.Create("Application Name", "LiteOverlay System Monitor", Color.FromArgb(0, 230, 118)),
-                Tuple.Create("Software Version", "v1.2.0", Color.FromArgb(0, 176, 255)),
+                Tuple.Create("Software Version", "v" + AppState.APP_VERSION, Color.FromArgb(0, 176, 255)),
                 Tuple.Create("Developer Name", "Emmzain Development Team", Color.FromArgb(255, 145, 0)),
                 Tuple.Create("Architecture", "64-bit Native C# WinForms", Color.White),
                 Tuple.Create("License", "Free / Open Source", Color.FromArgb(200, 210, 225))
@@ -1745,7 +2029,7 @@ namespace LiteOverlay
                 }
             };
 
-            lblUpdateStatusText = new Label { Text = "✔ Status: Up to Date (v1.2.0)", Font = new Font("Segoe UI", 10.5f, FontStyle.Bold), ForeColor = Color.FromArgb(0, 230, 118), Location = new Point(16, 16), AutoSize = true };
+            lblUpdateStatusText = new Label { Text = "✔ Status: Up to Date (v" + AppState.APP_VERSION + ")", Font = new Font("Segoe UI", 10.5f, FontStyle.Bold), ForeColor = Color.FromArgb(0, 230, 118), Location = new Point(16, 16), AutoSize = true };
             Label lblStatDesc = new Label
             {
                 Text = "When a new update is released by the developer, your installed app will update automatically.",
@@ -1794,7 +2078,9 @@ namespace LiteOverlay
             try
             {
                 cpuCounter = new PerformanceCounter("Processor", "% Processor Time", "_Total");
-                cpuCounter.NextValue();
+                cpuCounter.NextValue(); // First call always returns 0 — warm up
+                Thread.Sleep(100);
+                cpuCounter.NextValue(); // Second call returns real value
             }
             catch
             {
