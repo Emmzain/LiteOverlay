@@ -537,6 +537,23 @@ namespace LiteOverlay
                                     lblUpdateStatusText.Text = "⚡ New Update Available (" + latestVersion + ")";
                                     lblUpdateStatusText.ForeColor = Color.FromArgb(255, 145, 0);
                                 }
+
+                                DialogResult res = MessageBox.Show(
+                                    "⚡ A new LiteOverlay update (" + latestVersion + ") is available!\n\n" +
+                                    "Would you like to download and restart LiteOverlay now?",
+                                    "LiteOverlay - Update Available",
+                                    MessageBoxButtons.YesNo,
+                                    MessageBoxIcon.Information);
+
+                                if (res == DialogResult.Yes)
+                                {
+                                    try
+                                    {
+                                        Process.Start("https://litefps.vercel.app/SetupLiteOverlay.exe");
+                                        ExitApplication();
+                                    }
+                                    catch { }
+                                }
                             });
                         }
                     }

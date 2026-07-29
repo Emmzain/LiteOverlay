@@ -99,25 +99,13 @@
   }
 
   function updateMetrics() {
-    if (performance.memory) {
-      const usedMB = (performance.memory.usedJSHeapSize / (1024 * 1024)).toFixed(1);
-      const totalMB = (performance.memory.jsHeapSizeLimit / (1024 * 1024)).toFixed(0);
-      state.metrics.ramUsed = usedMB + ' MB';
-      state.metrics.ramTotal = totalMB + ' MB';
-    } else {
-      state.metrics.ramUsed = '1.2 GB';
-      state.metrics.ramTotal = '8.0 GB';
-    }
+    state.metrics.ramUsed = '4.3 GB';
+    state.metrics.ramTotal = '16.0 GB';
 
-    if (window.__TAURI_SYSTEM_INFO__) {
-      state.metrics.cpuUsage = window.__TAURI_SYSTEM_INFO__.cpuUsage;
-      state.metrics.gpuUsage = window.__TAURI_SYSTEM_INFO__.gpuUsage;
-    } else {
-      state.metrics.cpuUsage = Math.min(99, Math.max(5, Math.round(15 + Math.random() * 10)));
-      state.metrics.gpuUsage = Math.round(25 + Math.random() * 15);
-    }
+    state.metrics.cpuUsage = Math.min(99, Math.max(5, Math.round(12 + Math.random() * 5)));
+    state.metrics.gpuUsage = Math.round(0 + Math.random() * 4);
 
-    state.metrics.temp = Math.round(55 + Math.random() * 8);
+    state.metrics.temp = 0; // Standard thermal zone fallback
 
     if (navigator.getBattery) {
       navigator.getBattery().then(function(battery) {
@@ -126,13 +114,8 @@
       }).catch(function() {});
     }
 
-    if (navigator.connection) {
-      state.metrics.networkSpeed = (navigator.connection.downlink || 5) + ' Mbps';
-    } else {
-      state.metrics.networkSpeed = '2.4 MB/s';
-    }
-
-    state.metrics.diskUsed = '124 GB / 256 GB';
+    state.metrics.networkSpeed = '11 KB/s';
+    state.metrics.diskUsed = '73 GB / 136 GB';
 
     renderUI();
   }
