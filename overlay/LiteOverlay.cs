@@ -2149,18 +2149,33 @@ namespace LiteOverlay
         {
             try
             {
-                DriveInfo cDrive = new DriveInfo("C");
-                if (cDrive.IsReady)
+                long totalBytes = 0;
+                long freeBytes = 0;
+
+                foreach (DriveInfo drive in DriveInfo.GetDrives())
                 {
-                    double totalGb = cDrive.TotalSize / (1024.0 * 1024.0 * 1024.0);
-                    double freeGb = cDrive.AvailableFreeSpace / (1024.0 * 1024.0 * 1024.0);
-                    double usedGb = totalGb - freeGb;
+                    try
+                    {
+                        if (drive.IsReady && drive.DriveType == DriveType.Fixed)
+                        {
+                            totalBytes += drive.TotalSize;
+                            freeBytes += drive.AvailableFreeSpace;
+                        }
+                    }
+                    catch { }
+                }
+
+                if (totalBytes > 0)
+                {
+                    double totalGb = totalBytes / (1024.0 * 1024.0 * 1024.0);
+                    double usedGb = (totalBytes - freeBytes) / (1024.0 * 1024.0 * 1024.0);
 
                     AppState.DiskText = string.Format("{0:F0} GB / {1:F0} GB", usedGb, totalGb);
                 }
             }
             catch { }
         }
+
 
     }
 
