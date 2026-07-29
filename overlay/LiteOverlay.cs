@@ -71,7 +71,7 @@ namespace LiteOverlay
         public static string NetSpeed = "0 KB/s";
         public static string DiskText = "124 GB / 256 GB";
 
-        public static readonly string APP_VERSION = "1.3.0";
+        public static readonly string APP_VERSION = "1.0.0";
 
         private static string GetSettingsPath()
         {
@@ -305,9 +305,9 @@ namespace LiteOverlay
             updateTimer.Tick += (s, e) => RenderHud();
             updateTimer.Start();
 
-            // Re-assert TopMost every 2 seconds so overlay stays visible over fullscreen games
+            // Re-assert TopMost every 500ms so overlay stays visible over fullscreen games
             topMostTimer = new System.Windows.Forms.Timer();
-            topMostTimer.Interval = 2000;
+            topMostTimer.Interval = 500;
             topMostTimer.Tick += (s, e) =>
             {
                 if (AppState.OverlayVisible && IsHandleCreated && !IsDisposed)
@@ -325,12 +325,15 @@ namespace LiteOverlay
             Shown += (s, e) => RenderHud();
         }
 
+        private const int WS_EX_NOACTIVATE = 0x08000000;
+        private const int WS_EX_TOOLWINDOW = 0x00000080;
+
         protected override CreateParams CreateParams
         {
             get
             {
                 CreateParams cp = base.CreateParams;
-                cp.ExStyle |= WS_EX_LAYERED | WS_EX_TOPMOST;
+                cp.ExStyle |= WS_EX_LAYERED | WS_EX_TOPMOST | WS_EX_NOACTIVATE | WS_EX_TOOLWINDOW;
                 return cp;
             }
         }
@@ -2042,6 +2045,54 @@ namespace LiteOverlay
             pStatusBox.Controls.Add(lblUpdateStatusText);
             pStatusBox.Controls.Add(lblStatDesc);
             boxUpdateInfo.Controls.Add(pStatusBox);
+
+            // Version History & Changelog Panel inside red box area
+            Panel pHistoryBox = new Panel
+            {
+                Location = new Point(18, 195),
+                Size = new Size(438, 305),
+                BackColor = Color.FromArgb(15, 20, 34)
+            };
+            pHistoryBox.Paint += (s, e) =>
+            {
+                using (Pen pen = new Pen(Color.FromArgb(27, 38, 59), 1))
+                {
+                    e.Graphics.DrawRectangle(pen, 0, 0, pHistoryBox.Width - 1, pHistoryBox.Height - 1);
+                }
+            };
+
+            Label lblHistoryTitle = new Label 
+            { 
+                Text = "📋  Version History & Changelog", 
+                Font = new Font("Segoe UI", 9.5f, FontStyle.Bold), 
+                ForeColor = Color.White, 
+                Location = new Point(16, 14), 
+                AutoSize = true 
+            };
+            pHistoryBox.Controls.Add(lblHistoryTitle);
+
+            TextBox txtChangelog = new TextBox
+            {
+                Multiline = true,
+                ReadOnly = true,
+                BackColor = Color.FromArgb(15, 20, 34),
+                ForeColor = Color.FromArgb(180, 195, 215),
+                BorderStyle = BorderStyle.None,
+                Location = new Point(16, 42),
+                Size = new Size(406, 245),
+                Font = new Font("Segoe UI", 9f),
+                ScrollBars = ScrollBars.Vertical,
+                Text = 
+                    "v1.0.0 (Current Release)\r\n" +
+                    "• Initial stable release of LiteOverlay gaming HUD.\r\n" +
+                    "• 100% Native Win32 hardware sensor telemetry (CPU, GPU, RAM, Disk, Temp).\r\n" +
+                    "• Re-asserting borderless gaming HUD overlay topmost logic.\r\n" +
+                    "• Persistent configuration settings saved inside settings.json.\r\n" +
+                    "• Integrated automatic update system powered by Vercel cloud.\r\n"
+            };
+            pHistoryBox.Controls.Add(txtChangelog);
+
+            boxUpdateInfo.Controls.Add(pHistoryBox);
         }
 
         [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Auto)]
