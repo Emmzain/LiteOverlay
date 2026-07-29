@@ -43,7 +43,7 @@ namespace LiteOverlay
         public static bool ShowNetwork = false;
         public static bool ShowDisk = false;
 
-        public static bool OverlayVisible = false;
+        public static bool OverlayVisible = true;
         public static bool ShowBorder = true;
         public static bool ShowLabels = true;
         public static bool GlowEffect = true;
@@ -319,6 +319,12 @@ namespace LiteOverlay
                 {
                     try
                     {
+                        if (!Visible)
+                        {
+                            Show();
+                            lastRenderedStateKey = "";
+                            RenderHud();
+                        }
                         SetWindowPos(Handle, HWND_TOPMOST, 0, 0, 0, 0,
                             SWP_NOMOVE | SWP_NOSIZE | SWP_NOACTIVATE | SWP_SHOWWINDOW);
                     }
@@ -409,7 +415,11 @@ namespace LiteOverlay
                 return;
             }
 
-            if (!Visible) Show();
+            if (!Visible)
+            {
+                Show();
+                lastRenderedStateKey = "";
+            }
 
             List<Tuple<string, string>> items = BuildMetricItems();
             Size contentSize = MeasureContentSize(items);
