@@ -450,11 +450,13 @@ namespace LiteOverlay
         private Button btnTabOverlay;
         private Button btnTabSystem;
         private Button btnTabPerf;
+        private Button btnTabAbout;
         private ModernToggleSwitch chkMasterSwitch;
 
         private Panel panelOverlayTab;
         private Panel panelSystemTab;
         private Panel panelPerfTab;
+        private Panel panelAboutTab;
         private FlowLayoutPanel gridSystemCards;
 
         private Label lblFpsVal, lblPingVal, lblRamVal, lblCpuVal, lblGpuVal, lblTempVal, lblBatVal, lblBatSub, lblNetVal, lblDiskVal;
@@ -632,12 +634,14 @@ namespace LiteOverlay
             Controls.Add(navPanel);
 
             btnTabOverlay = CreateNavTab("⚡ OVERLAY SETTINGS", 12);
-            btnTabSystem = CreateNavTab("📊 SYSTEM MONITOR", 210);
-            btnTabPerf = CreateNavTab("⚙ PERFORMANCE & APP", 408);
+            btnTabSystem = CreateNavTab("📊 SYSTEM MONITOR", 205);
+            btnTabPerf = CreateNavTab("⚙ PERFORMANCE & APP", 398);
+            btnTabAbout = CreateNavTab("ℹ ABOUT", 605);
 
             navPanel.Controls.Add(btnTabOverlay);
             navPanel.Controls.Add(btnTabSystem);
             navPanel.Controls.Add(btnTabPerf);
+            navPanel.Controls.Add(btnTabAbout);
 
             Panel headerPanel = new Panel { Dock = DockStyle.Top, Height = 75, BackColor = Color.FromArgb(9, 12, 19) };
             headerPanel.Paint += (s, e) =>
@@ -828,6 +832,7 @@ namespace LiteOverlay
             BuildOverlayTab();
             BuildSystemTab();
             BuildPerfTab();
+            BuildAboutTab();
 
             SwitchTab(panelOverlayTab, btnTabOverlay);
         }
@@ -838,7 +843,7 @@ namespace LiteOverlay
             {
                 Text = text,
                 Location = new Point(x, 6),
-                Size = new Size(190, 40),
+                Size = new Size(185, 40),
                 FlatStyle = FlatStyle.Flat,
                 Font = new Font("Segoe UI", 9.5f, FontStyle.Bold),
                 ForeColor = Color.FromArgb(136, 152, 168),
@@ -850,7 +855,8 @@ namespace LiteOverlay
             {
                 if (btn == btnTabOverlay) SwitchTab(panelOverlayTab, btnTabOverlay);
                 else if (btn == btnTabSystem) SwitchTab(panelSystemTab, btnTabSystem);
-                else SwitchTab(panelPerfTab, btnTabPerf);
+                else if (btn == btnTabPerf) SwitchTab(panelPerfTab, btnTabPerf);
+                else SwitchTab(panelAboutTab, btnTabAbout);
             };
             return btn;
         }
@@ -860,6 +866,7 @@ namespace LiteOverlay
             panelOverlayTab.Visible = false;
             panelSystemTab.Visible = false;
             panelPerfTab.Visible = false;
+            panelAboutTab.Visible = false;
 
             btnTabOverlay.ForeColor = Color.FromArgb(136, 152, 168);
             btnTabOverlay.BackColor = Color.Transparent;
@@ -867,10 +874,12 @@ namespace LiteOverlay
             btnTabSystem.BackColor = Color.Transparent;
             btnTabPerf.ForeColor = Color.FromArgb(136, 152, 168);
             btnTabPerf.BackColor = Color.Transparent;
+            btnTabAbout.ForeColor = Color.FromArgb(136, 152, 168);
+            btnTabAbout.BackColor = Color.Transparent;
 
             activePane.Visible = true;
-            activeBtn.ForeColor = Color.FromArgb(0, 230, 118);
-            activeBtn.BackColor = Color.FromArgb(20, 0, 230, 118);
+            activeBtn.ForeColor = Color.FromArgb(12, 14, 18);
+            activeBtn.BackColor = Color.FromArgb(0, 230, 118);
         }
 
         private void BuildOverlayTab()
@@ -1555,6 +1564,148 @@ namespace LiteOverlay
 
                 featY += 64;
             }
+        }
+
+        private void BuildAboutTab()
+        {
+            panelAboutTab = new Panel { Dock = DockStyle.Fill, AutoScroll = true };
+            contentPanel.Controls.Add(panelAboutTab);
+
+            // Left Card: Software Details
+            Panel boxAboutDetails = new Panel
+            {
+                Location = new Point(10, 10),
+                Size = new Size(475, 520),
+                BackColor = Color.FromArgb(9, 12, 19)
+            };
+            boxAboutDetails.Paint += (s, e) =>
+            {
+                using (Pen pen = new Pen(Color.FromArgb(22, 28, 43), 1))
+                {
+                    e.Graphics.DrawRectangle(pen, 0, 0, boxAboutDetails.Width - 1, boxAboutDetails.Height - 1);
+                }
+            };
+            panelAboutTab.Controls.Add(boxAboutDetails);
+
+            Label lblTitle = new Label
+            {
+                Text = "ℹ  Software Information",
+                Font = new Font("Segoe UI", 11.5f, FontStyle.Bold),
+                ForeColor = Color.White,
+                Location = new Point(18, 16),
+                AutoSize = true
+            };
+            boxAboutDetails.Controls.Add(lblTitle);
+
+            Label lblSub = new Label
+            {
+                Text = "LiteOverlay System Monitor & Gaming HUD Information",
+                Font = new Font("Segoe UI", 8.5f, FontStyle.Regular),
+                ForeColor = Color.FromArgb(136, 152, 168),
+                Location = new Point(18, 42),
+                AutoSize = true
+            };
+            boxAboutDetails.Controls.Add(lblSub);
+
+            Tuple<string, string, Color>[] items = new Tuple<string, string, Color>[]
+            {
+                Tuple.Create("Application Name", "LiteOverlay System Monitor", Color.FromArgb(0, 230, 118)),
+                Tuple.Create("Software Version", "v1.2.0", Color.FromArgb(0, 176, 255)),
+                Tuple.Create("Developer Name", "Emmzain Development Team", Color.FromArgb(255, 145, 0)),
+                Tuple.Create("Architecture", "64-bit Native C# WinForms", Color.White),
+                Tuple.Create("License", "Free / Open Source", Color.FromArgb(200, 210, 225))
+            };
+
+            int rowY = 80;
+            foreach (var item in items)
+            {
+                Panel pRow = new Panel
+                {
+                    Location = new Point(18, rowY),
+                    Size = new Size(438, 48),
+                    BackColor = Color.FromArgb(15, 20, 34)
+                };
+                pRow.Paint += (s, e) =>
+                {
+                    using (Pen pen = new Pen(Color.FromArgb(27, 38, 59), 1))
+                    {
+                        e.Graphics.DrawRectangle(pen, 0, 0, pRow.Width - 1, pRow.Height - 1);
+                    }
+                };
+
+                Label lblName = new Label { Text = item.Item1 + ":", Font = new Font("Segoe UI", 9f), ForeColor = Color.FromArgb(136, 152, 168), Location = new Point(14, 14), AutoSize = true };
+                Label lblVal = new Label { Text = item.Item2, Font = new Font("Segoe UI", 9.5f, FontStyle.Bold), ForeColor = item.Item3, Location = new Point(180, 13), AutoSize = true };
+
+                pRow.Controls.Add(lblName);
+                pRow.Controls.Add(lblVal);
+                boxAboutDetails.Controls.Add(pRow);
+
+                rowY += 56;
+            }
+
+            // Right Card: Auto Update System
+            Panel boxUpdateInfo = new Panel
+            {
+                Location = new Point(500, 10),
+                Size = new Size(475, 520),
+                BackColor = Color.FromArgb(9, 12, 19)
+            };
+            boxUpdateInfo.Paint += (s, e) =>
+            {
+                using (Pen pen = new Pen(Color.FromArgb(22, 28, 43), 1))
+                {
+                    e.Graphics.DrawRectangle(pen, 0, 0, boxUpdateInfo.Width - 1, boxUpdateInfo.Height - 1);
+                }
+            };
+            panelAboutTab.Controls.Add(boxUpdateInfo);
+
+            Label lblUpdTitle = new Label
+            {
+                Text = "🔄  Auto Updates & Web Sync",
+                Font = new Font("Segoe UI", 11.5f, FontStyle.Bold),
+                ForeColor = Color.White,
+                Location = new Point(18, 16),
+                AutoSize = true
+            };
+            boxUpdateInfo.Controls.Add(lblUpdTitle);
+
+            Label lblUpdSub = new Label
+            {
+                Text = "Cloud repository sync & automatic update status",
+                Font = new Font("Segoe UI", 8.5f, FontStyle.Regular),
+                ForeColor = Color.FromArgb(136, 152, 168),
+                Location = new Point(18, 42),
+                AutoSize = true
+            };
+            boxUpdateInfo.Controls.Add(lblUpdSub);
+
+            Panel pStatusBox = new Panel
+            {
+                Location = new Point(18, 80),
+                Size = new Size(438, 120),
+                BackColor = Color.FromArgb(15, 20, 34)
+            };
+            pStatusBox.Paint += (s, e) =>
+            {
+                using (Pen pen = new Pen(Color.FromArgb(27, 38, 59), 1))
+                {
+                    e.Graphics.DrawRectangle(pen, 0, 0, pStatusBox.Width - 1, pStatusBox.Height - 1);
+                }
+            };
+
+            Label lblStatTitle = new Label { Text = "✔ Status: Up to Date", Font = new Font("Segoe UI", 10.5f, FontStyle.Bold), ForeColor = Color.FromArgb(0, 230, 118), Location = new Point(16, 16), AutoSize = true };
+            Label lblStatDesc = new Label
+            {
+                Text = "LiteOverlay automatically checks GitHub / Vercel cloud repository on launch. When developer pushes a new release, installed client apps receive updates automatically.",
+                Font = new Font("Segoe UI", 8.5f),
+                ForeColor = Color.FromArgb(180, 195, 215),
+                Location = new Point(16, 45),
+                Size = new Size(400, 60)
+            };
+
+            pStatusBox.Controls.Add(lblStatTitle);
+            pStatusBox.Controls.Add(lblStatDesc);
+            boxUpdateInfo.Controls.Add(pStatusBox);
         }
 
         [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Auto)]
