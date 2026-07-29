@@ -71,7 +71,7 @@ namespace LiteOverlay
         public static string NetSpeed = "0 KB/s";
         public static string DiskText = "124 GB / 256 GB";
 
-        public static readonly string APP_VERSION = "1.0.1";
+        public static readonly string APP_VERSION = "1.0.2";
 
         private static string GetSettingsPath()
         {
@@ -284,6 +284,10 @@ namespace LiteOverlay
         [DllImport("user32.dll")]
         private static extern bool SetWindowPos(IntPtr hWnd, IntPtr hWndInsertAfter, int X, int Y, int cx, int cy, uint uFlags);
 
+        [DllImport("user32.dll")]
+        private static extern IntPtr GetForegroundWindow();
+
+        private IntPtr lastForegroundWindow = IntPtr.Zero;
         private System.Windows.Forms.Timer topMostTimer;
 
         public HudForm()
@@ -310,20 +314,28 @@ namespace LiteOverlay
             updateTimer.Tick += (s, e) => RenderHud();
             updateTimer.Start();
 
-            // Re-assert TopMost only when window becomes visible
+            // Re-assert TopMost whenever active window changes (Minecraft / 3D Games focus event)
             topMostTimer = new System.Windows.Forms.Timer();
-            topMostTimer.Interval = 1000;
+            topMostTimer.Interval = 300;
             topMostTimer.Tick += (s, e) =>
             {
                 if (AppState.OverlayVisible && IsHandleCreated && !IsDisposed)
                 {
                     try
                     {
+                        IntPtr fg = GetForegroundWindow();
                         if (!Visible)
                         {
                             Show();
                             lastRenderedStateKey = "";
                             RenderHud();
+                            SetWindowPos(Handle, HWND_TOPMOST, 0, 0, 0, 0,
+                                SWP_NOMOVE | SWP_NOSIZE | SWP_NOACTIVATE | SWP_SHOWWINDOW);
+                            lastForegroundWindow = fg;
+                        }
+                        else if (fg != lastForegroundWindow)
+                        {
+                            lastForegroundWindow = fg;
                             SetWindowPos(Handle, HWND_TOPMOST, 0, 0, 0, 0,
                                 SWP_NOMOVE | SWP_NOSIZE | SWP_NOACTIVATE | SWP_SHOWWINDOW);
                         }
