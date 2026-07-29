@@ -150,6 +150,11 @@ namespace LiteOverlay
                 RefreshInterval = ReadInt(json, "RefreshInterval", 500);
                 HudX = ReadInt(json, "HudX", -1);
                 HudY = ReadInt(json, "HudY", -1);
+                if (HudX < -10000 || HudY < -10000)
+                {
+                    HudX = -1;
+                    HudY = -1;
+                }
 
                 string layout = ReadString(json, "LayoutStyle", "Vertical Stack");
                 if (layout == "Horizontal Compact Bar" || layout == "Vertical Stack")
@@ -611,9 +616,12 @@ namespace LiteOverlay
         protected override void OnLocationChanged(EventArgs e)
         {
             base.OnLocationChanged(e);
-            AppState.HudX = Location.X;
-            AppState.HudY = Location.Y;
-            AppState.SaveSettings();
+            if (WindowState == FormWindowState.Normal && Location.X >= -10000 && Location.Y >= -10000 && Visible)
+            {
+                AppState.HudX = Location.X;
+                AppState.HudY = Location.Y;
+                AppState.SaveSettings();
+            }
         }
     }
 
@@ -923,7 +931,7 @@ namespace LiteOverlay
             }
 
             // Save all settings on exit
-            if (hudWindow != null && !hudWindow.IsDisposed)
+            if (hudWindow != null && !hudWindow.IsDisposed && hudWindow.WindowState == FormWindowState.Normal && hudWindow.Visible && hudWindow.Location.X >= -10000)
             {
                 AppState.HudX = hudWindow.Location.X;
                 AppState.HudY = hudWindow.Location.Y;
