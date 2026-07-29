@@ -333,11 +333,17 @@ namespace LiteOverlay
         private const int WS_EX_NOACTIVATE = 0x08000000;
         private const int WS_EX_TOOLWINDOW = 0x00000080;
 
+        protected override bool ShowWithoutActivation
+        {
+            get { return true; }
+        }
+
         protected override CreateParams CreateParams
         {
             get
             {
                 CreateParams cp = base.CreateParams;
+                cp.Style |= unchecked((int)0x80000000); // WS_POPUP
                 cp.ExStyle |= WS_EX_LAYERED | WS_EX_TOPMOST | WS_EX_NOACTIVATE | WS_EX_TOOLWINDOW;
                 return cp;
             }
