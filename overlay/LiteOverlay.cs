@@ -310,9 +310,9 @@ namespace LiteOverlay
             updateTimer.Tick += (s, e) => RenderHud();
             updateTimer.Start();
 
-            // Re-assert TopMost every 500ms so overlay stays visible over fullscreen games
+            // Re-assert TopMost only when window becomes visible
             topMostTimer = new System.Windows.Forms.Timer();
-            topMostTimer.Interval = 500;
+            topMostTimer.Interval = 1000;
             topMostTimer.Tick += (s, e) =>
             {
                 if (AppState.OverlayVisible && IsHandleCreated && !IsDisposed)
@@ -324,9 +324,9 @@ namespace LiteOverlay
                             Show();
                             lastRenderedStateKey = "";
                             RenderHud();
+                            SetWindowPos(Handle, HWND_TOPMOST, 0, 0, 0, 0,
+                                SWP_NOMOVE | SWP_NOSIZE | SWP_NOACTIVATE | SWP_SHOWWINDOW);
                         }
-                        SetWindowPos(Handle, HWND_TOPMOST, 0, 0, 0, 0,
-                            SWP_NOMOVE | SWP_NOSIZE | SWP_NOACTIVATE | SWP_SHOWWINDOW);
                     }
                     catch { }
                 }
@@ -1303,6 +1303,40 @@ namespace LiteOverlay
             boxStats.Controls.Add(CreateStatChip("🔋", "Battery %", AppState.ShowBattery, startX, startY + (rowHeight * 2), v => AppState.ShowBattery = v));
             boxStats.Controls.Add(CreateStatChip("📶", "Network Speed", AppState.ShowNetwork, startX + colWidth, startY + (rowHeight * 2), v => AppState.ShowNetwork = v));
             boxStats.Controls.Add(CreateStatChip("💽", "Disk Storage", AppState.ShowDisk, startX + (colWidth * 2), startY + (rowHeight * 2), v => AppState.ShowDisk = v));
+
+            // Gaming Display Mode Tip Box
+            Panel boxTip = new Panel
+            {
+                Location = new Point(15, 420),
+                Size = new Size(444, 80),
+                BackColor = Color.FromArgb(15, 20, 34)
+            };
+            boxTip.Paint += (s, e) =>
+            {
+                using (Pen pen = new Pen(Color.FromArgb(0, 230, 118), 1))
+                {
+                    e.Graphics.DrawRectangle(pen, 0, 0, boxTip.Width - 1, boxTip.Height - 1);
+                }
+            };
+            Label lblTipHeader = new Label
+            {
+                Text = "💡  IMPORTANT GAME DISPLAY TIP:",
+                Font = new Font("Segoe UI", 8.8f, FontStyle.Bold),
+                ForeColor = Color.FromArgb(0, 230, 118),
+                Location = new Point(12, 10),
+                AutoSize = true
+            };
+            Label lblTipBody = new Label
+            {
+                Text = "For 100% overlay visibility & zero game lag, set your Game Video Settings to 'Borderless' or 'Windowed Fullscreen' mode in games.",
+                Font = new Font("Segoe UI", 8.2f),
+                ForeColor = Color.FromArgb(180, 195, 215),
+                Location = new Point(12, 32),
+                Size = new Size(420, 42)
+            };
+            boxTip.Controls.Add(lblTipHeader);
+            boxTip.Controls.Add(lblTipBody);
+            boxStats.Controls.Add(boxTip);
 
             // Right Card: Overlay Appearance & Theme
             Panel boxApp = new Panel
