@@ -71,7 +71,7 @@ namespace LiteOverlay
         public static string NetSpeed = "0 KB/s";
         public static string DiskText = "124 GB / 256 GB";
 
-        public static readonly string APP_VERSION = "1.0.0";
+        public static readonly string APP_VERSION = "1.0.1";
 
         private static string GetSettingsPath()
         {
@@ -2116,10 +2116,14 @@ namespace LiteOverlay
                 Font = new Font("Segoe UI", 9f),
                 ScrollBars = ScrollBars.Vertical,
                 Text = 
-                    "v1.0.0 (Current Release)\r\n" +
+                    "v1.0.1 (Current Release)\r\n" +
+                    "• Added 0% CPU Native Win32 GetSystemTimes hardware telemetry engine.\r\n" +
+                    "• Fixed game launch/minimize overlay auto-recovery logic.\r\n" +
+                    "• Added Independent Pop-Out HUD settings to Web Dashboard.\r\n" +
+                    "• Fixed application exit exception & smoothed window dragging.\r\n\r\n" +
+                    "v1.0.0\r\n" +
                     "• Initial stable release of LiteOverlay gaming HUD.\r\n" +
                     "• 100% Native Win32 hardware sensor telemetry (CPU, GPU, RAM, Disk, Temp).\r\n" +
-                    "• Re-asserting borderless gaming HUD overlay topmost logic.\r\n" +
                     "• Persistent configuration settings saved inside settings.json.\r\n" +
                     "• Integrated automatic update system powered by Vercel cloud.\r\n"
             };
