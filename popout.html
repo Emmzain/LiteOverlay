@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>LiteOverlay - Pop-Out HUD</title>
+  <style>
+    :root {
+      --accent-color: #00e676;
+    }
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+    body {
+      background-color: transparent;
+      color: #f0f4f8;
+      font-family: 'Segoe UI', Roboto, sans-serif;
+      overflow: hidden;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+      width: 100vw;
+    }
+    .hud-window {
+      background-color: rgba(12, 14, 18, 0.85);
+      border: 1px solid var(--accent-color);
+      border-radius: 6px;
+      padding: 0.8rem;
+      transition: all 0.15s ease;
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+      min-width: 130px;
+    }
+    /* Layout configurations */
+    .hud-window.horizontal-layout {
+      flex-direction: row;
+      gap: 1.25rem;
+      align-items: center;
+    }
+    .hud-window.grid-layout {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 0.8rem;
+    }
+    .hud-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 1rem;
+      font-weight: 700;
+    }
+    .hud-window.horizontal-layout .hud-row {
+      justify-content: center;
+      gap: 0.4rem;
+    }
+    .hud-key {
+      font-size: 0.8em;
+      color: #8a96a8;
+      text-transform: uppercase;
+    }
+    .hud-val {
+      font-family: 'Consolas', monospace;
+      color: var(--accent-color);
+    }
+    .no-stats {
+      color: #8a96a8;
+      font-size: 0.85rem;
+      text-align: center;
+    }
+  </style>
+</head>
+<body>
+  <div id="hud-container" class="hud-window">
+    <div class="no-stats">Connecting to Dashboard...</div>
+  </div>
+
+  <script>
+    const container = document.getElementById('hud-container');
+
+    window.addEventListener('message', function (event) {
+      if (event.data && event.data.type === 'UPDATE_HUD') {
+        const { metrics, settings, toggles } = event.data;
+
+        // Apply appearance styling
+        document.documentElement.style.setProperty('--accent-color', settings.accentColor);
+        
+        const alpha = (settings.opacity / 100).toFixed(2);
+        container.style.backgroundColor = settings.opacity === 0 ? 'transparent' : `rgba(12, 14, 18, ${alpha})`;
+        container.style.borderRadius = `${settings.borderRadius}px`;
+        container.style.border = settings.showBorder ? `1px solid ${settings.accentColor}` : '1px solid transparent';
+        container.style.fontSize = `${settings.fontSize}px`;
+
+        if (settings.showBorder && settings.glowEffect) {
+          container.style.boxShadow = `0 0 14px ${settings.accentColor}, 0 4px 16px rgba(0, 0, 0, 0.6)`;
+        } else if (settings.opacity > 0) {
+          container.style.boxShadow = '0 4px 16px rgba(0, 0, 0, 0.6)';
+        } else {
+          container.style.boxShadow = 'none';
+        }
+
+        // Apply layout styles
+        container.className = `hud-window ${settings.layout}-layout`;
+
+        // Render metrics html
+        let html = '';
+        const showKey = settings.showLabels;
+
+        if (toggles.fps) {
+          html += `<div class="hud-row">${showKey ? '<span class="hud-key">FPS</span>' : ''}<span class="hud-val">${metrics.fps}</span></div>`;
+        }
+        if (toggles.ping) {
+          html += `<div class="hud-row">${showKey ? '<span class="hud-key">PING</span>' : ''}<span class="hud-val">${metrics.ping}ms</span></div>`;
+        }
+        if (toggles.cpu) {
+          html += `<div class="hud-row">${showKey ? '<span class="hud-key">CPU</span>' : ''}<span class="hud-val">${metrics.cpuUsage}%</span></div>`;
+        }
+        if (toggles.gpu) {
+          html += `<div class="hud-row">${showKey ? '<span class="hud-key">GPU</span>' : ''}<span class="hud-val">${metrics.gpuUsage}%</span></div>`;
+        }
+        if (toggles.ram) {
+          html += `<div class="hud-row">${showKey ? '<span class="hud-key">RAM</span>' : ''}<span class="hud-val">${metrics.ramUsed}</span></div>`;
+        }
+        if (toggles.temp) {
+          html += `<div class="hud-row">${showKey ? '<span class="hud-key">TEMP</span>' : ''}<span class="hud-val">${metrics.temp}°C</span></div>`;
+        }
+        if (toggles.battery) {
+          html += `<div class="hud-row">${showKey ? '<span class="hud-key">BAT</span>' : ''}<span class="hud-val">${metrics.batteryPct}%</span></div>`;
+        }
+        if (toggles.network) {
+          html += `<div class="hud-row">${showKey ? '<span class="hud-key">NET</span>' : ''}<span class="hud-val">${metrics.networkSpeed}</span></div>`;
+        }
+        if (toggles.disk) {
+          html += `<div class="hud-row">${showKey ? '<span class="hud-key">DISK</span>' : ''}<span class="hud-val">${metrics.diskUsed}</span></div>`;
+        }
+
+        if (!html) {
+          html = '<div class="no-stats">(No Stats Selected)</div>';
+        }
+
+        container.innerHTML = html;
+      }
+    });
+
+    // Notify parent window that popout has loaded
+    if (window.opener) {
+      window.opener.postMessage({ type: 'POPOUT_READY' }, '*');
+    }
+  </script>
+</body>
+</html>

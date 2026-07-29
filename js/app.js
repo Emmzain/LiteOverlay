@@ -1,6 +1,7 @@
 /**
  * LiteOverlay - Dashboard & Borderless Air HUD Overlay Engine
  * No PWA. Pure standalone web app for desktop .exe.
+ * Features: Local Overlay Simulation + Independent Pop-Out HUD Window Settings
  */
 
 (function () {
@@ -45,10 +46,33 @@
       lowPower: true,
       locked: false,
       overlayVisible: false
+    },
+    // Independent settings for the POP-OUT HUD window
+    popToggles: {
+      fps: true,
+      ping: true,
+      ram: true,
+      cpu: true,
+      gpu: true,
+      temp: false,
+      battery: true,
+      network: false,
+      disk: false
+    },
+    popSettings: {
+      layout: 'vertical',
+      opacity: 85,
+      fontSize: 14,
+      borderRadius: 6,
+      accentColor: '#00e676',
+      showBorder: true,
+      showLabels: true,
+      glowEffect: true
     }
   };
 
   let elements = {};
+  let popoutWindow = null;
 
   function cacheElements() {
     elements = {
@@ -105,7 +129,7 @@
     state.metrics.cpuUsage = Math.min(99, Math.max(5, Math.round(12 + Math.random() * 5)));
     state.metrics.gpuUsage = Math.round(0 + Math.random() * 4);
 
-    state.metrics.temp = 0; // Standard thermal zone fallback
+    state.metrics.temp = 42; // Simulated hardware temperature
 
     if (navigator.getBattery) {
       navigator.getBattery().then(function(battery) {
@@ -118,6 +142,18 @@
     state.metrics.diskUsed = '73 GB / 136 GB';
 
     renderUI();
+    syncPopoutData(); // Sync popped out HUD window real-time data
+  }
+
+  function syncPopoutData() {
+    if (popoutWindow && !popoutWindow.closed) {
+      popoutWindow.postMessage({
+        type: 'UPDATE_HUD',
+        metrics: state.metrics,
+        settings: state.popSettings,
+        toggles: state.popToggles
+      }, '*');
+    }
   }
 
   function renderUI() {
@@ -286,6 +322,19 @@
     }
   }
 
+  function syncPopGlowCheckboxState() {
+    const popGlow = document.getElementById('pop-toggle-glow');
+    const popBorder = document.getElementById('pop-toggle-border');
+    if (popGlow && popBorder) {
+      popGlow.disabled = !popBorder.checked;
+      const container = document.getElementById('pop-glow-checkbox-container');
+      if (container) {
+        container.style.opacity = popBorder.checked ? '1' : '0.45';
+        container.style.pointerEvents = popBorder.checked ? 'auto' : 'none';
+      }
+    }
+  }
+
   function initEventListeners() {
     initTabNavigation();
 
@@ -311,7 +360,7 @@
       })(toggleKeys[i]);
     }
 
-    var colorBtns = document.querySelectorAll('.color-btn');
+    var colorBtns = document.querySelectorAll('.color-btn:not(#pop-color-palette .color-btn)');
     for (var i = 0; i < colorBtns.length; i++) {
       colorBtns[i].addEventListener('click', function() {
         for (var j = 0; j < colorBtns.length; j++) colorBtns[j].classList.remove('active');
@@ -409,6 +458,137 @@
     if (elements.overlay) {
       makeDraggable(elements.overlay);
     }
+
+    // ──────────────────────────────────────────
+    // POP-OUT HUD CONTROLS & LISTENERS
+    // ──────────────────────────────────────────
+
+    // Pop-Out toggle switches
+    var popKeys = ['fps', 'ping', 'ram', 'cpu', 'gpu', 'temp', 'battery', 'network', 'disk'];
+    for (var i = 0; i < popKeys.length; i++) {
+      (function(key) {
+        var checkbox = document.getElementById('pop-toggle-' + key);
+        if (checkbox) {
+          checkbox.checked = state.popToggles[key];
+          checkbox.addEventListener('change', function(e) {
+            state.popToggles[key] = e.target.checked;
+            syncPopoutData();
+          });
+        }
+      })(popKeys[i]);
+    }
+
+    // Pop-Out Accent Theme Swatches
+    var popColorBtns = document.querySelectorAll('#pop-color-palette .color-btn');
+    for (var i = 0; i < popColorBtns.length; i++) {
+      popColorBtns[i].addEventListener('click', function() {
+        for (var j = 0; j < popColorBtns.length; j++) popColorBtns[j].classList.remove('active');
+        this.classList.add('active');
+        state.popSettings.accentColor = this.getAttribute('data-color');
+        syncPopoutData();
+      });
+    }
+
+    // Pop-Out HUD Layout Select
+    const popLayoutSelect = document.getElementById('pop-overlay-layout');
+    if (popLayoutSelect) {
+      popLayoutSelect.value = state.popSettings.layout;
+      popLayoutSelect.addEventListener('change', function(e) {
+        state.popSettings.layout = e.target.value;
+        syncPopoutData();
+      });
+    }
+
+    // Pop-Out Opacity Slider
+    const popOpacityInput = document.getElementById('pop-overlay-opacity');
+    const popOpacityVal = document.getElementById('pop-opacity-val');
+    if (popOpacityInput) {
+      popOpacityInput.value = state.popSettings.opacity;
+      popOpacityInput.addEventListener('input', function(e) {
+        state.popSettings.opacity = parseInt(e.target.value, 10);
+        if (popOpacityVal) popOpacityVal.textContent = state.popSettings.opacity + '%';
+        syncPopoutData();
+      });
+    }
+
+    // Pop-Out Font Size Slider
+    const popSizeInput = document.getElementById('pop-overlay-size');
+    const popSizeVal = document.getElementById('pop-size-val');
+    if (popSizeInput) {
+      popSizeInput.value = state.popSettings.fontSize;
+      popSizeInput.addEventListener('input', function(e) {
+        state.popSettings.fontSize = parseInt(e.target.value, 10);
+        if (popSizeVal) popSizeVal.textContent = state.popSettings.fontSize + 'px';
+        syncPopoutData();
+      });
+    }
+
+    // Pop-Out Corner Rounding Slider
+    const popRadiusInput = document.getElementById('pop-overlay-radius');
+    const popRadiusVal = document.getElementById('pop-radius-val');
+    if (popRadiusInput) {
+      popRadiusInput.value = state.popSettings.borderRadius;
+      popRadiusInput.addEventListener('input', function(e) {
+        state.popSettings.borderRadius = parseInt(e.target.value, 10);
+        if (popRadiusVal) popRadiusVal.textContent = state.popSettings.borderRadius + 'px';
+        syncPopoutData();
+      });
+    }
+
+    // Pop-Out Checkboxes
+    const popBorderCheckbox = document.getElementById('pop-toggle-border');
+    if (popBorderCheckbox) {
+      popBorderCheckbox.checked = state.popSettings.showBorder;
+      popBorderCheckbox.addEventListener('change', function(e) {
+        state.popSettings.showBorder = e.target.checked;
+        syncPopGlowCheckboxState();
+        syncPopoutData();
+      });
+    }
+
+    const popGlowCheckbox = document.getElementById('pop-toggle-glow');
+    if (popGlowCheckbox) {
+      popGlowCheckbox.checked = state.popSettings.glowEffect;
+      popGlowCheckbox.addEventListener('change', function(e) {
+        state.popSettings.glowEffect = e.target.checked;
+        syncPopoutData();
+      });
+    }
+
+    const popLabelsCheckbox = document.getElementById('pop-show-labels');
+    if (popLabelsCheckbox) {
+      popLabelsCheckbox.checked = state.popSettings.showLabels;
+      popLabelsCheckbox.addEventListener('change', function(e) {
+        state.popSettings.showLabels = e.target.checked;
+        syncPopoutData();
+      });
+    }
+
+    syncPopGlowCheckboxState();
+
+    // Launch Pop-Out Window Button
+    const btnLaunchPopout = document.getElementById('btn-launch-popout');
+    if (btnLaunchPopout) {
+      btnLaunchPopout.addEventListener('click', function() {
+        if (popoutWindow && !popoutWindow.closed) {
+          popoutWindow.focus();
+          return;
+        }
+
+        const w = 240;
+        const h = 285;
+        const left = (screen.width / 2) - (w / 2);
+        const top = (screen.height / 2) - (h / 2);
+
+        popoutWindow = window.open('popout.html', 'LiteOverlayPopout',
+          `width=${w},height=${h},left=${left},top=${top},resizable=yes,scrollbars=no,status=no,toolbar=no,menubar=no,location=no`);
+
+        if (popoutWindow) {
+          // Immediately sync data after popout opens
+          setTimeout(syncPopoutData, 400);
+        }
+      });
+    }
   }
 
   function makeDraggable(element) {
@@ -463,6 +643,13 @@
     initEventListeners();
     applyOverlayStyles();
     restartMonitoringLoop();
+
+    // Listen for messages from pop-out window to trigger immediate initial sync
+    window.addEventListener('message', function(event) {
+      if (event.data && event.data.type === 'POPOUT_READY') {
+        syncPopoutData();
+      }
+    });
   }
 
   document.addEventListener('DOMContentLoaded', init);
